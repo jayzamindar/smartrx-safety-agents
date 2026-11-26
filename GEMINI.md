@@ -126,6 +126,12 @@ In multi-round evaluation or deliberation loops, stakeholder votes and state map
 - **Unicode NFKC Normalization:** All inbound medication identifiers, clinical codes, tag keys, tag values, and principal/resource identifiers must pass through `unicodedata.normalize("NFKC", val).strip().casefold()` prior to allowlist, risk-matrix, or protected-identity comparisons to block fullwidth homoglyph, zero-width, and non-breaking space (`\u00a0`) bypasses.
 - **Fail-Closed Contraindication Rule:** Any severe/major drug-drug interaction (DDI), duplicate therapy class, or documented patient allergy cross-reactivity MUST deterministically trigger `HOLD_PRESCRIPTION` + `ESCALATE_TO_CLINICAL_PHARMACIST`.
 - **Organ Function Dosing Bounds:** Missing eGFR/CrCl or hepatic function labs for narrow-therapeutic-index drugs MUST trigger `REQUEST_RENAL_HEPATIC_LABS`.
+- **OCR NTI Triggers:** Low-confidence drug parses or OCR extractions involving Narrow Therapeutic Index (NTI) medications (e.g., Warfarin, Digoxin, Lithium, Phenytoin) MUST deterministically trigger Tier 1 RED HITL lock (`HOLD_PRESCRIPTION`) for mandatory manual clarification.
+- **AGS Beer's Criteria & Evidence Citations:** Flag potentially inappropriate medications in geriatric patients (age $\ge 65$) per AGS Beer's Criteria and surface de-prescribing alternatives (`PROPOSE_THERAPEUTIC_ALTERNATIVE`). Every clinical warning or recommendation MUST attach a verifiable source citation (RxNorm interaction ID, NLM/Lexicomp section, or PubMed ID).
+- **Three-Tier HITL Confidence Thresholds:**
+  - **Tier 1 RED (`< 0.70`):** Mandatory workflow lock (`HOLD_PRESCRIPTION`) for contraindicated/major DDI, allergy cross-reactivity, OCR failure on NTI drug, or AI confidence `< 0.70`; requires structured Clinical Justification Code and digital NPI attestation to override.
+  - **Tier 2 YELLOW (`0.70–0.89`):** Affirmative pharmacist review & accept/modify (with reason text) for moderate DDI, duplicate therapy, renal/hepatic dose adjustment, Prior Auth, or AI confidence `0.70–0.89`.
+  - **Tier 3 GREEN (`≥ 0.90`):** Passive observation logged automatically to the immutable audit trail for verified matches with zero conflicts and AI confidence `≥ 0.90`.
 - **HIPAA PHI Protection:** Strictly redact patient identifiers (MRN, SSN, DOB, full name) from all logs, LLM prompts, and SQLite audit ledgers using deterministic tokenization.
 
 ### 9. [UNIVERSAL CORE] OpenAPI 3.0 Strict Schema Sanitization (Allowlist Protobuf Compliance)
