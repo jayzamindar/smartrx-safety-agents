@@ -1,0 +1,50 @@
+# ==============================================================================
+# Universal Enterprise AI Agent Blueprint — .gitignore
+# ==============================================================================
+
+# Python Runtime, Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Secrets & Environment Configurations
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Packaging & Build Distribution
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Dependency Lockfiles (preserve uv.lock & requirements.lock when committed, ignore local temp locks)
+*.lock.tmp
+
+# Testing, Static Typing & Linting Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Persistence, Databases, Storage & Audit Logs
+data/
+*.db
+*.db-wal
+*.db-shm
+audit_logs/
+*.log
+
+# OS & IDE Metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
