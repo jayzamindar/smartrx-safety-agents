@@ -71,17 +71,17 @@ You are acting as a **Principal AI Systems Architect, Lead SRE, and Staff Securi
 
 ## 3. Non-Negotiable Architectural & Security Invariants
 
-### 1. [DOMAIN REFERENCE: CLOUD FINOPS] Calibrated Safety Enforcement, Strict Action Enum & Quarantine Pattern
+### 1. [DOMAIN: CLINICAL PHARMACY] Calibrated Safety Enforcement, Strict Action Enum & Quarantine Pattern
 Every action proposed by the system must be scored on a 1–5 Safety Risk scale and strictly validated against the canonical `ActionType` Enum:
-`ActionType = Literal["TERMINATE_INSTANCE", "STOP_INSTANCE", "MODIFY_INSTANCE_TYPE", "MODIFY_S3_LIFECYCLE", "DELETE_EBS_VOLUME", "RELEASE_EIP", "ENABLE_INTELLIGENT_TIERING"]`
+`ActionType = Literal["APPROVE_RECONCILED_LIST", "FLAG_DRUG_INTERACTION", "HOLD_PRESCRIPTION", "PROPOSE_THERAPEUTIC_ALTERNATIVE", "REQUEST_RENAL_HEPATIC_LABS", "ESCALATE_TO_CLINICAL_PHARMACIST"]`
 - **Strict Enum Allowlist:** If the LLM generates a target action outside this valid Enum allowlist, the `GuardrailEngine` must immediately reject the payload fail-closed and quarantine the action (`quarantined=True`, `quarantine_reason="INVALID_ACTION_ENUM_TYPE"`).
 - **Quarantine on Missing Mitigation:** Any action with Safety Risk Score $\ge 3$ lacking explicit, validated automated mitigations and deterministic rollback procedures must be quarantined (`quarantined=True`, `quarantine_reason="MISSING_MANDATORY_ROLLBACK"`). Never silently inject generic templates or execute unmitigated high-risk actions.
 
-### 2. [DOMAIN REFERENCE: CLOUD FINOPS] Deterministic Execution Overwriting (Zero-Hallucination Guardrail)
-To eliminate AI hallucination vulnerabilities in cloud infrastructure operations, LLMs must never synthesize executable commands directly. The `GuardrailEngine` must unconditionally overwrite `execution_payload["iam_policy"]`, `execution_payload["aws_cli"]`, and `execution_payload["rollback"]` using deterministic Python functions mapped strictly to the internal `ActionType` matrix:
-- IAM policies must validate standard AWS ARNs (`arn:aws:ec2:*:*:instance/{res_id}`, `arn:aws:s3:::{res_id}`, etc.).
-- Wildcard permissions (`"Action": "*"`, `"Resource": "*"`) are strictly forbidden.
-- Unknown resource types, unallowlisted actions, or invalid identifiers must raise an immediate `ValueError` and trigger fail-closed quarantine.
+### 2. [DOMAIN: CLINICAL PHARMACY] Deterministic Execution Overwriting (Zero-Hallucination Guardrail)
+To eliminate AI hallucination vulnerabilities in clinical pharmacy operations, LLMs must never synthesize executable commands, clinical orders, or FHIR payloads directly. The `GuardrailEngine` must unconditionally overwrite `execution_payload` using deterministic HL7 FHIR R4 JSON generators (`MedicationRequest`, `DetectedIssue`, `Task`) mapped strictly to the internal `ActionType` matrix with zero LLM command synthesis:
+- Generated HL7 FHIR R4 resources (`MedicationRequest`, `DetectedIssue`, `Task`) must validate canonical FHIR R4 resource types, status codes, and RxNorm/SNOMED/LOINC identifier formats.
+- Unbounded or wildcard clinical scopes and free-text LLM-synthesized orders are strictly forbidden.
+- Unknown resource types, unallowlisted actions, or invalid clinical identifiers must raise an immediate `ValueError` and trigger fail-closed quarantine.
 
 ### 3. [UNIVERSAL CORE] Full-Payload Cryptographic HMAC-SHA256 Signing, Anti-Replay & Canonical Serialization
 All remediation plans and webhook payloads must be cryptographically sealed before persistence or transmission to guarantee absolute tamper-evidence and replay immunity:
@@ -121,12 +121,12 @@ All SQLite database and JSONL ledger operations must enforce strict concurrency 
 - All untrusted input data, external metrics, and freeform resource tags passed to LLM reasoning prompts must be sanitized and enclosed inside `<untrusted_telemetry_data>` XML-style delimiters.
 - Prompt file loaders must strictly enforce `Path.is_relative_to(prompts_dir)` to prevent path traversal attacks.
 
-### 8. [DOMAIN REFERENCE: CLOUD FINOPS] Reference Heuristic Guardrails & Safety Floors
-In multi-round evaluation or deliberation loops, stakeholder votes and state maps must be reset upon round increment. Heuristic engines must enforce hard domain safeguards:
-- **Unicode NFKC Normalization:** All inbound tag keys, tag values, and principal/resource identifiers must pass through `unicodedata.normalize("NFKC", val).strip().casefold()` prior to allowlist, risk-matrix, or protected-identity comparisons to block fullwidth homoglyph, zero-width, and non-breaking space (`\u00a0`) bypasses.
-- **EC2 Memory Floor:** Abort downsizing if `memory_utilization_avg_pct > 65.0\%` to protect against OOM crashes.
-- **Commitment Awareness:** Zero out projected savings if resources are covered by `reserved` or `savings_plan` commitments.
-- **S3 Object Size Threshold:** Require average object size $\ge 128\text{ KB}$ before recommending `INTELLIGENT_TIERING` to avoid per-object monitoring fee penalties.
+### 8. [DOMAIN: CLINICAL PHARMACY] SmartRx Clinical Safety Guardrails & HIPAA PHI Protection
+In multi-round evaluation or deliberation loops, stakeholder votes and state maps must be reset upon round increment. Heuristic engines must enforce hard clinical pharmacy safeguards:
+- **Unicode NFKC Normalization:** All inbound medication identifiers, clinical codes, tag keys, tag values, and principal/resource identifiers must pass through `unicodedata.normalize("NFKC", val).strip().casefold()` prior to allowlist, risk-matrix, or protected-identity comparisons to block fullwidth homoglyph, zero-width, and non-breaking space (`\u00a0`) bypasses.
+- **Fail-Closed Contraindication Rule:** Any severe/major drug-drug interaction (DDI), duplicate therapy class, or documented patient allergy cross-reactivity MUST deterministically trigger `HOLD_PRESCRIPTION` + `ESCALATE_TO_CLINICAL_PHARMACIST`.
+- **Organ Function Dosing Bounds:** Missing eGFR/CrCl or hepatic function labs for narrow-therapeutic-index drugs MUST trigger `REQUEST_RENAL_HEPATIC_LABS`.
+- **HIPAA PHI Protection:** Strictly redact patient identifiers (MRN, SSN, DOB, full name) from all logs, LLM prompts, and SQLite audit ledgers using deterministic tokenization.
 
 ### 9. [UNIVERSAL CORE] OpenAPI 3.0 Strict Schema Sanitization (Allowlist Protobuf Compliance)
 When binding Pydantic schemas to Gemini `responseSchema`:
@@ -173,7 +173,7 @@ Dumping unindexed, raw multi-megabyte log files, large CSVs, or whole database d
 - **API Versioning & Protocol Negotiation:** All HTTP/SSE endpoints must support versioned routing prefixed with `/v1/` (`/v1/sse`, `/v1/messages`, `/v1/health`) alongside root backward-compatibility aliases (`/sse`, `/messages`, `/health`). For MCP transports (`stdio` and `SSE`), the server must implement protocol version negotiation during initialization (`initialize` method responding with supported protocol versions, e.g. `2024-11-05`), rejecting incompatible protocol major versions with JSON-RPC error code `-32602`.
 
 ### MCP Resources & Prompts Namespace
-- All resource URIs must use the project prefix: `smartrx://...` (e.g., `smartrx://audit/ledger`, `smartrx://policies/risk-matrix`, `smartrx://config/instance-mappings`, `smartrx://runbooks/waste-audit`).
+- All resource URIs must use the project prefix: `smartrx://...` (e.g., `smartrx://catalog/interactions`, `smartrx://reconcile/verify`, `smartrx://audit/escalations`).
 - MCP prompts must be registered with typed argument schemas and descriptive runbooks.
 
 ---
