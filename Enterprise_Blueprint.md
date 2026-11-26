@@ -180,7 +180,7 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 - [ ] **9.5 Quarantine Pattern for Missing Mitigations & Invalid Enums:** Quarantine Risk $\ge 3$ actions lacking explicit mitigations or actions with invalid Enum types.
 - [ ] **9.6 Gemini `responseSchema` Dereferencing & Token Cap:** Dereference `$defs`, strip unsupported fields via `ALLOWED_GEMINI_FIELDS`, and enforce `maxOutputTokens=8192` with high-thinking RAM guardrails.
 - [ ] **9.7 FHIR Audit Log Persistence & Distributed Durability:** Document distributed synchronization options for SQLite WAL ledgers and FHIR audit logs with deterministic HIPAA PHI redaction.
-- [ ] **9.8 Deterministic IAM & CLI Execution Overwriting:** Strip and discard LLM-generated execution payloads, replacing them with deterministic Python templates.
+- [ ] **9.8 Deterministic FHIR R4 Payload Execution Overwriting:** Strip and discard any LLM-generated execution payloads, replacing them with deterministic HL7 FHIR R4 JSON generators (`MedicationRequest`, `DetectedIssue`, `Task`) to verify zero LLM synthesis of clinical orders.
 - [ ] **9.9 Real AWS Pricing Catalog Lookup & CatalogNotFoundError:** Real rate lookup in `config/instance_mappings.json` calculating `(curr_rate - tgt_rate) * 730.0`; raises `CatalogNotFoundError` on missing catalog and routes to Tertiary engine.
 - [ ] **9.10 Constant-Time Authentication & Fail-Closed Enforcement:** `hmac.compare_digest()` matching with fail-closed production checks.
 - [ ] **9.11 Verification Test Suite Expansion:** Dedicated unit tests for all security controls in `tests/test_phase9_hardening.py`.
@@ -189,7 +189,7 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 - [ ] **9.14 Query Parameter API Key Plaintext Logging Advisory:** Publish SecOps guidance on URL query parameter exposure in access logs.
 - [ ] **9.15 Pre-Commit Repository Hygiene:** Enforce zero un-ignored `.env` files and verify cleanliness via pre-commit hooks.
 - [ ] **9.16 Live Gemini API Schema Pre-Flight Verification:** Validate `responseSchema` deserialization against live Google Protobuf parser.
-- [ ] **9.17 Valid AWS ARNs & Scoped IAM Actions:** Enforce strictly formatted AWS ARNs and action-specific permissions; reject unknown resource types.
+- [ ] **9.17 Valid HL7 FHIR Resource References & Scoped ActionType Permits:** Enforce strictly formatted HL7 FHIR R4 resource references (`MedicationRequest`, `DetectedIssue`, `Task`) and verify strict schema compliance and `ActionType` allowlist enforcement; reject unknown resource types.
 - [ ] **9.18 Full-Payload HMAC Signing, Anti-Replay TTL, Unicode Normalization & Canonical Serialization:** Full-payload canonical JSON serialization via `json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False)` with mandatory production secret enforcement, Unicode NFKC normalization (`unicodedata.normalize("NFKC", val).strip().casefold()`), and anti-replay verification (`issued_at`, `expires_at` TTL $\le 300\text{s}$ rejecting `current_time >= expires_at`, and unique `plan_id` nonce).
 - [ ] **9.19 Allowlist Protobuf Schema Sanitizer:** Allowlist schema fields (`ALLOWED_GEMINI_FIELDS`), strip unsupported OpenAPI constraints, and exclude `execution_payload` from LLM schema egress.
 - [ ] **9.20 Strip `<think>` Reasoning Blocks:** Remove `<think>` blocks and code fences from OpenRouter secondary model responses.
