@@ -29,6 +29,8 @@
 - `persistence/` - `AuditLedger` (`ledger.py`): SQLite WAL hash-chained store with per-operation FileLock & MVCC reads.
 - `api/` - `server.py` (FastAPI REST/SSE, 10MB guard, auth, `/api/v1/*`) & `mcp_server.py` (`smartrx://` stdio/SSE).
 - `observability.py` - OpenTelemetry spans, metrics, and structured logging.
+- `seed_data.py` - Synthetic HL7 FHIR R4 bundle seeder & `TC-001`–`TC-008` benchmark runner (zero PHI).
+- `ui/` - `dashboard.py`: Three-Column Pharmacist HITL Workbench, BPMH diff, What-If Sandbox & 3-Tier traffic light.
 - `cli.py` - Click CLI (`status`, `reconcile --dry-run`, `benchmark`, `verify-audit`, `serve`, `mcp`).
 
 ## Test Suite Layout (`tests/`)
@@ -40,3 +42,4 @@
 - `test_mcp.py` - stdio and SSE transport protocols, 10MB limits, auth verification.
 - `test_ledger.py` - SQLite WAL concurrency, MVCC read-bypass, migration tests.
 - `test_phase9_hardening.py` - Cryptographic HMAC, anti-replay, Unicode normalization.
+- `test_ui_and_seeder.py` - Pharmacist HITL Workbench, BPMH diff, What-If swap, circuit breaker & `TC-001`–`TC-008` seeder tests.
