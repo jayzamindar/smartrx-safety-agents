@@ -24,7 +24,8 @@
 - `guardrails/` - `GuardrailEngine`, quarantine, deterministic HL7 FHIR R4 (`fhir_generator.py`), `rollback.py`, HMAC-SHA256 signing.
 - `heuristics/` - Offline deterministic clinical engines (`ddi_engine.py`, `allergy_checker.py`, `dosing_validator.py`, `formulary_checker.py`, `phi_redactor.py`, `engine.py`).
 - `config/drug_interactions.json` - Schema-validated static DDI, allergy cross-reactivity, NTI, renal/hepatic, Beer's Criteria & CMS catalog.
-- `reasoner/` - Gemini client (thinkingBudget, responseSchema), OpenRouter fallback.
+- `prompts/modules/` - Version-stamped (<80-line) clinical prompts for all 6 specialist agents.
+- `agents/` - `MultiTierLLMClient` (`llm_client.py`), 6 specialists (`specialists.py`), `SmartRxOrchestrator` (`orchestrator.py`).
 - `persistence/` - `AuditLedger` (`ledger.py`): SQLite WAL hash-chained store with per-operation FileLock & MVCC reads.
 - `mcp/` - Dual-transport MCP server (stdio JSON-RPC & Starlette SSE).
 - `observability.py` - OpenTelemetry spans, metrics, and structured logging.
@@ -34,7 +35,7 @@
 - `test_models_clinical.py` - Contract validation, ActionType enum allowlist, NFKC normalization tests.
 - `test_clinical_heuristics.py` - Benchmark `TC-001`–`TC-008`, `CatalogNotFoundError`, OCR NTI & PHI redaction tests.
 - `test_guardrails_ledger.py` - FHIR overwrite, HMAC-SHA256, TTL/replay, idempotency & SQLite WAL hash-chain tests.
-- `test_reasoner.py` - LLM reasoning, responseSchema sanitization, cascade tests.
+- `test_agents_orchestrator.py` - 6-agent pipeline, pre-LLM PHI scrubbing, 3-tier cascade, 3-turn circuit breaker, ledger chain.
 - `test_mcp.py` - stdio and SSE transport protocols, 10MB limits, auth verification.
 - `test_ledger.py` - SQLite WAL concurrency, MVCC read-bypass, migration tests.
 - `test_phase9_hardening.py` - Cryptographic HMAC, anti-replay, Unicode normalization.
