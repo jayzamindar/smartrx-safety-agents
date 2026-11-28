@@ -38,9 +38,13 @@ class AgentStatus(StrEnum):
     FAILED = "FAILED"
 
 
+_ZERO_WIDTH_TRANS = str.maketrans("", "", "\u200b\u200c\u200d\ufeff\u00ad")
+
+
 def normalize_clinical_identifier(value: str) -> str:
-    """Normalize clinical identifiers/codes via Unicode NFKC, strip, and casefold."""
-    return unicodedata.normalize("NFKC", value).strip().casefold()
+    """Normalize clinical identifiers/codes via Unicode NFKC, zero-width strip, and casefold."""
+    cleaned = value.translate(_ZERO_WIDTH_TRANS)
+    return unicodedata.normalize("NFKC", cleaned).strip().casefold()
 
 
 def _normalize_optional(value: str | None) -> str | None:

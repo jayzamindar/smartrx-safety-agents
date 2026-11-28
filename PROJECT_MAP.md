@@ -12,6 +12,7 @@
 - `docs/URD.md` - User Requirements Document: 6-agent squad, BPMH, 3-tier HITL, and SmartRx MCP specs.
 - `docs/PRD.md` - Product Requirements Document: personas, FS-1 to FS-8, edge cases, and KPIs.
 - `docs/TRD.md` - Technical Requirements Document: pipeline architecture, Pydantic schemas, HMAC, WAL & `TC-001`–`TC-008`.
+- `docs/ARCHITECTURE.md` - Hexagonal system architecture, 6-agent pipeline & module matrix.
 - `pyproject.toml` - PEP 517/621 packaging, Python 3.13+ deps, `pytest-timeout`, `ruff`, `mypy`.
 - `.env.example` - Environment configuration template (no secrets).
 - `README.md` - Root navigation hub, architecture overview, token matrix, and operational quick-start.
@@ -42,6 +43,7 @@
 - `test_mcp.py` - stdio and SSE transport protocols, 10MB limits, auth verification.
 - `test_ledger.py` - SQLite WAL concurrency, MVCC read-bypass, migration tests.
 - `test_phase9_hardening.py` - Cryptographic HMAC, anti-replay, Unicode normalization.
+- `test_adversarial_regression.py` - Phase 12 zero-width bypass, boundary eGFR, WAL contention & MCP size tests.
 - `test_ui_and_seeder.py` - Pharmacist HITL Workbench, BPMH diff, What-If swap, circuit breaker & `TC-001`–`TC-008` seeder tests.
 - `test_observability_and_retention.py` - OpenTelemetry `trace_span`, `.shutdown()`, `InMemoryMetricsLedger`, and JSONL rotation/pruning tests.
 - `.github/workflows/ci.yml` - Python 3.13/3.14 CI matrix, `ruff`, `mypy`, `pytest` (>=90% cov), `pip-audit`, license & secret scan.

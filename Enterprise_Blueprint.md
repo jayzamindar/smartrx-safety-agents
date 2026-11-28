@@ -35,10 +35,10 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 - [x] **0.1 Forensic Baseline Audit:** Author `Blueprint_Repo_Baseline_AuditReport.md` evaluating the repository across 10 enterprise dimensions with letter grades and technical debt backlog.
 - [x] **0.2 Product Requirements Document:** Author `docs/PRD.md` detailing product vision, personas, functional capabilities (FS-1 to FS-8), edge cases, and KPIs.
 - [x] **0.3 Technical Requirements Document:** Author `docs/TRD.md` specifying JSON-RPC 2.0 contracts, mathematical waste formulas, Gemini thinking budget payload specs, 10MB payload ceiling, 8192 output token cap, and NFRs.
-- [ ] **0.4 Harmonize User Requirements:** Author/update `docs/URD.md` aligning multi-model fallback, dual MCP transports, and persona workflows.
-- [ ] **0.5 Harmonize System Architecture:** Author/update `docs/ARCHITECTURE.md` with revised C4 container diagrams, sequence flows, SQLite MVCC read-bypass architecture, and decoupled subsystem boundaries.
-- [ ] **0.6 Master Production Backlog:** Maintain `Enterprise_Blueprint.md` as the living engineering roadmap and task checklist.
-- [ ] **0.7 Centralized README Navigation Hub:** Overhaul root `README.md` to serve as the master navigation index containing working relative Markdown hyperlinks (`[Title](path/to/file.md)`) separating core architectural specifications from blueprint audit logs:
+- [x] **0.4 Harmonize User Requirements:** Author/update `docs/URD.md` aligning multi-model fallback, dual MCP transports, and persona workflows.
+- [x] **0.5 Harmonize System Architecture:** Author/update `docs/ARCHITECTURE.md` with revised C4 container diagrams, sequence flows, SQLite MVCC read-bypass architecture, and decoupled subsystem boundaries.
+- [x] **0.6 Master Production Backlog:** Maintain `Enterprise_Blueprint.md` as the living engineering roadmap and task checklist.
+- [x] **0.7 Centralized README Navigation Hub:** Overhaul root `README.md` to serve as the master navigation index containing working relative Markdown hyperlinks (`[Title](path/to/file.md)`) separating core architectural specifications from blueprint audit logs:
   - **Core Specifications (`docs/`):**
     - `docs/URD.md`
     - `docs/PRD.md`
@@ -52,8 +52,8 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
     - `Blueprint_Production_Readiness_Report.md`
     - `Blueprint_Debug_Log.md`
     - `AUDIT_REMEDIATION_LOG.md`
-- [ ] **0.8 Architectural Delta & Loophole Registry:** Maintain `Blueprint_Debug_Log.md` establishing a forensic registry of all architectural edge cases, vulnerability traps, incident resolutions, explicit technical fixes, and CI/CD verification gate impacts.
-- [ ] **0.9 Project Map Index & Fresh-Session Handoff Protocol:** Create and maintain a compact (< 60-line) `PROJECT_MAP.md` at repository root mapping all files to primary classes/functions for targeted line-range reads, and establish the session context circuit breaker and fresh-session handoff protocol across agent workflows.
+- [x] **0.8 Architectural Delta & Loophole Registry:** Maintain `Blueprint_Debug_Log.md` establishing a forensic registry of all architectural edge cases, vulnerability traps, incident resolutions, explicit technical fixes, and CI/CD verification gate impacts.
+- [x] **0.9 Project Map Index & Fresh-Session Handoff Protocol:** Create and maintain a compact (< 60-line) `PROJECT_MAP.md` at repository root mapping all files to primary classes/functions for targeted line-range reads, and establish the session context circuit breaker and fresh-session handoff protocol across agent workflows.
 
 ---
 
@@ -81,8 +81,8 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
   - [x] `ledger/`: `store.py` thread-safe audit ledger with SQLite WAL persistence and write-only file locking preserving MVCC for reads.
   - [x] `mcp/` (`api/`): Protocol servers: `mcp_server.py` (standard I/O JSON-RPC 2.0 & SSE with 10MB ceiling) and `server.py` (FastAPI + Starlette SSE with 10MB body middleware, `/health`, `/api/v1/reconcile`, `/api/v1/adjudicate`, `/api/v1/audit/verify`).
   - [x] `cli.py`: Click CLI runner with `status`, `reconcile` (`--dry-run`), `benchmark`, `verify-audit`, `serve`, and `mcp` subcommands.
-- [ ] **2.2 Backward Compatibility Shims:** Maintain necessary compatibility aliases to guarantee zero breaking changes across existing callers.
-- [ ] **2.3 Baseline Test Suite Validation:** Verify that all initial module imports and basic contract unit tests pass cleanly.
+- [x] **2.2 Backward Compatibility Shims:** Maintain necessary compatibility aliases to guarantee zero breaking changes across existing callers.
+- [x] **2.3 Baseline Test Suite Validation:** Verify that all initial module imports and basic contract unit tests pass cleanly.
 
 ---
 
@@ -243,19 +243,19 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 ### Phase 12: [UNIVERSAL CORE] Cross-Model Adversarial Audit & Wrinkle Elimination
 *Goal: Subject the complete codebase, schemas, and documentation to multi-model red-team review to eliminate subtle blind spots before release.*
 
-- [ ] **12.1 Post-Build Multi-Model Audit Workflow:** Establish a structured post-build review protocol once all automated tests pass at 100%. Export core schemas, prompt templates, guardrail engines, and documentation.
-- [ ] **12.2 Multi-Model Red-Team Review:** Prompt secondary frontier models (Claude 3.7/4 Sonnet, OpenAI o3/GPT-4o, and Qwen 2.5 Coder 32B) with a structured red-team review prompt:
+- [x] **12.1 Post-Build Multi-Model Audit Workflow:** Establish a structured post-build review protocol once all automated tests pass at 100%. Export core schemas, prompt templates, guardrail engines, and documentation.
+- [x] **12.2 Multi-Model Red-Team Review:** Prompt secondary frontier models (Claude 3.7/4 Sonnet, OpenAI o3/GPT-4o, and Qwen 2.5 Coder 32B) with a structured red-team review prompt:
   - Identify edge-case ambiguities in heuristic thresholds.
   - Uncover race conditions in SQLite WAL file locking or SSE connection pooling.
   - Probe for silent failure modes in fallback cascades or error handlers.
   - Detect FinOps pricing or commitment traps (e.g., unintended data egress or API request fees).
   - Flag any documentation drift between `docs/TRD.md`, `README.md`, and code implementations.
-- [ ] **12.3 Finding-to-Regression Test Loop:** For every confirmed finding or vulnerability identified during the adversarial audit:
+- [x] **12.3 Finding-to-Regression Test Loop:** For every confirmed finding or vulnerability identified during the adversarial audit:
   - Formulate a specific reproduction test case in `tests/`.
   - Implement the code or schema fix to resolve the edge case.
   - Verify that the test passes and add it permanently to the regression test suite.
-- [ ] **12.4 Final Release Sign-Off:** Execute the complete test suite, verify zero open vulnerabilities, and sign off on the production release.
-- [ ] **12.5 Post-Build Cross-Document Synchronization & Release Tagging:** Execute full synchronization of `README.md` (with clear document role descriptions and verified relative links), `PROJECT_MAP.md`, `AUDIT_REMEDIATION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/TRD.md`, `docs/PRD.md`, `docs/URD.md`, `modular_prompt.md`, and `Blueprint_*.md` against actual shipped code, schemas, and test metrics—with zero dead links and zero "TBD" / "Planned" placeholders—before tagging `v1.0.0`.
+- [x] **12.4 Final Release Sign-Off:** Execute the complete test suite, verify zero open vulnerabilities, and sign off on the production release.
+- [x] **12.5 Post-Build Cross-Document Synchronization & Release Tagging:** Execute full synchronization of `README.md` (with clear document role descriptions and verified relative links), `PROJECT_MAP.md`, `AUDIT_REMEDIATION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/TRD.md`, `docs/PRD.md`, `docs/URD.md`, `modular_prompt.md`, and `Blueprint_*.md` against actual shipped code, schemas, and test metrics—with zero dead links and zero "TBD" / "Planned" placeholders—before tagging `v1.0.0`.
 
 ---
 
