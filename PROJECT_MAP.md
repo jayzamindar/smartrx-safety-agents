@@ -54,3 +54,4 @@
 - `docs/Cloud_Deployment_Guide.md` - AWS ECS/Fargate, Azure Container Apps, K8s, IAM, OIDC & blue/green rollback.
 - `docs/MONITORING_AND_OBSERVABILITY.md` - Infra/RAM/WAL thresholds, API/MCP SLAs, AI governance & security alerts.
 - `Blueprint_Production_Readiness_Report.md` - 8-pillar SRE Production Readiness Review (100/100 PASS).
+- `buildprompt.md` - Reusable end-to-end master build playbook (Phases 0–12).

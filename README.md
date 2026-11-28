@@ -19,6 +19,7 @@
 | [`Blueprint_Debug_Log.md`](Blueprint_Debug_Log.md) | Incident debugging ledger and historical forensic loophole registry. |
 | [`Blueprint_Repo_Baseline_AuditReport.md`](Blueprint_Repo_Baseline_AuditReport.md) | Phase 0.1 10-dimension forensic baseline audit report. |
 | [`Blueprint_Production_Readiness_Report.md`](Blueprint_Production_Readiness_Report.md) | Phase 10.2 8-pillar SRE Production Readiness Review (`100/100 PASS`). |
+| [`buildprompt.md`](buildprompt.md) | Reusable end-to-end master build playbook (Phases 0–12) for reproducing or adapting `v1.0.0`. |
 
 ### Technical, Security & Operational Documentation (`docs/`)
 | Document | Role |
