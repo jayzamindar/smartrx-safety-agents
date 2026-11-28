@@ -6,7 +6,7 @@ import hashlib
 import re
 from typing import Final
 
-from smartrx_safety_agents.models.clinical import StrictClinicalModel
+from smartrx_safety_agents.models.clinical import StrictClinicalModel, normalize_clinical_identifier
 
 _SSN_RE: Final[re.Pattern[str]] = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 _MRN_RE: Final[re.Pattern[str]] = re.compile(
@@ -107,7 +107,9 @@ class PHIRedactor:
         for pattern in (_SSN_RE, _MRN_RE, _DOB_RE, _EMAIL_RE, _PHONE_RE, _LABELED_NAME_RE):
             if pattern.search(text):
                 return True
-        lowered = text.casefold()
+        lowered = normalize_clinical_identifier(text)
         return any(
-            ident.strip().casefold() in lowered for ident in known_identifiers if ident.strip()
+            normalize_clinical_identifier(ident) in lowered
+            for ident in known_identifiers
+            if ident.strip()
         )

@@ -22,10 +22,16 @@
 
 ## 2. Cloud Target Topologies
 
-### 2.1 AWS ECS / Fargate
-- **Task Definition:** Set `cpu: 1024`, `memory: 2048`, `readonlyRootFilesystem: true`, `user: "10001:10001"`, and container port `8080`.
-- **Storage:** Mount an AWS EFS Access Point (with POSIX permissions `10001:10001`) to `/app/data` and `/app/audit_logs`—single-writer task (`desiredCount: 1`) or partitioned per-tenant volumes to satisfy SQLite WAL POSIX `fcntl` locking (see [`docs/Ephemeral_Ledger_Architecture.md`](Ephemeral_Ledger_Architecture.md)).
-- **Secrets Injection:** Inject `MCP_API_KEY`, `PLAN_SIGNING_SECRET`, `SMARTRX_SAFETY_AGENTS_WEBHOOK_SECRET`, `GEMINI_API_KEY`, and optional `OPENROUTER_API_KEY` from **AWS Secrets Manager** via ECS `secrets` (`valueFrom` ARN).
+### 2.1 AWS ECS / Fargate (`deploy/aws-ecs-task-definition.json`)
+- **Manifest:** [`deploy/aws-ecs-task-definition.json`](../deploy/aws-ecs-task-definition.json) (`cpu: 1024`, `memory: 2048`, `readonlyRootFilesystem: true`, `user: "10001:10001"`, port `8080`, EFS volumes at `/app/data` and `/app/audit_logs`).
+- **Deploy CLI Steps:**
+  ```bash
+  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+  docker build -t <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/smartrx-safety-agents:v1.0.0 .
+  docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/smartrx-safety-agents:v1.0.0
+  aws ecs register-task-definition --cli-input-json file://deploy/aws-ecs-task-definition.json
+  aws ecs update-service --cluster smartrx-prod --service smartrx-safety-agents --task-definition smartrx-safety-agents --force-new-deployment
+  ```
 - **Least-Privilege IAM Execution & Task Roles:**
   ```json
   {
@@ -47,12 +53,27 @@
   }
   ```
 
-### 2.2 Azure Container Apps
-- **Container Profile:** `cpu: 1.0`, `memory: 2.0Gi`, ingress external/internal on target port `8080`, `minReplicas: 1`, `maxReplicas: 1` when sharing a single SQLite WAL Azure Files SMB/NFS share.
-- **Secrets Injection:** Reference **Azure Key Vault** secrets via User-Assigned Managed Identity (`Key Vault Secrets User` role only—no `Contributor` or `Owner` roles).
-- **Storage:** Mount Azure Files (NFSv4.1 for POSIX `filelock` compatibility) to `/app/data` and `/app/audit_logs`.
+### 2.2 Microsoft Azure Container Apps (`deploy/azure-container-app.yaml`)
+- **Manifest:** [`deploy/azure-container-app.yaml`](../deploy/azure-container-app.yaml) (`cpu: 1.0`, `memory: 2.0Gi`, User-Assigned Managed Identity, Key Vault secret references, Azure Files NFSv4.1 mounts, `minReplicas: 1`, `maxReplicas: 1`).
+- **Deploy CLI Steps:**
+  ```bash
+  az acr login --name <ACR_NAME>
+  docker build -t <ACR_NAME>.azurecr.io/smartrx-safety-agents:v1.0.0 .
+  docker push <ACR_NAME>.azurecr.io/smartrx-safety-agents:v1.0.0
+  az containerapp create -g <RG> -n smartrx-safety-agents --yaml deploy/azure-container-app.yaml
+  ```
 
-### 2.3 Kubernetes (EKS / AKS / GKE)
+### 2.3 Google Cloud Run (`Dockerfile.serverless` & `deploy/serverless-container.yaml`)
+- **Manifest & Image:** [`Dockerfile.serverless`](../Dockerfile.serverless) (dynamic `${PORT:-8080}`, UID `10001` `smartrx`) + [`deploy/serverless-container.yaml`](../deploy/serverless-container.yaml) (Knative gen2, `2048Mi`, Secret Manager `secretKeyRef`, Cloud Filestore PVC / GCS archive).
+- **Deploy CLI Steps:**
+  ```bash
+  gcloud auth configure-docker us-central1-docker.pkg.dev
+  docker build -f Dockerfile.serverless -t us-central1-docker.pkg.dev/<PROJECT_ID>/smartrx/smartrx-safety-agents:v1.0.0 .
+  docker push us-central1-docker.pkg.dev/<PROJECT_ID>/smartrx/smartrx-safety-agents:v1.0.0
+  gcloud run services replace deploy/serverless-container.yaml --region us-central1
+  ```
+
+### 2.4 Kubernetes (EKS / AKS / GKE)
 - **Workload:** Deploy as a `StatefulSet` (`replicas: 1` per ledger shard) with `securityContext`:
   - `runAsNonRoot: true`, `runAsUser: 10001`, `runAsGroup: 10001`
   - `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, `capabilities.drop: ["ALL"]`

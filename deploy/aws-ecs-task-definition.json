@@ -1,0 +1,93 @@
+{
+  "family": "smartrx-safety-agents",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/smartrxTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "smartrx-safety-agents",
+      "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/smartrx-safety-agents:v1.0.0",
+      "essential": true,
+      "user": "10001:10001",
+      "readonlyRootFilesystem": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "ENVIRONMENT", "value": "production" },
+        { "name": "REQUIRE_AUTH", "value": "true" },
+        { "name": "GEMINI_MODEL_NAME", "value": "gemini-3.8-flash-high" },
+        { "name": "GEMINI_THINKING_BUDGET", "value": "2048" },
+        { "name": "MAX_OUTPUT_TOKENS", "value": "8192" },
+        { "name": "SMARTRX_DB_PATH", "value": "/app/data/smartrx_ledger.db" },
+        { "name": "AUDIT_LOG_DIR", "value": "/app/audit_logs" }
+      ],
+      "secrets": [
+        {
+          "name": "MCP_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:smartrx/prod:MCP_API_KEY::"
+        },
+        {
+          "name": "PLAN_SIGNING_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:smartrx/prod:PLAN_SIGNING_SECRET::"
+        },
+        {
+          "name": "SMARTRX_SAFETY_AGENTS_WEBHOOK_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:smartrx/prod:WEBHOOK_SECRET::"
+        },
+        {
+          "name": "GEMINI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:smartrx/prod:GEMINI_API_KEY::"
+        }
+      ],
+      "mountPoints": [
+        { "sourceVolume": "smartrx-data", "containerPath": "/app/data", "readOnly": false },
+        { "sourceVolume": "smartrx-audit-logs", "containerPath": "/app/audit_logs", "readOnly": false },
+        { "sourceVolume": "smartrx-tmp", "containerPath": "/tmp", "readOnly": false }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)\""
+        ],
+        "interval": 15,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 10
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/smartrx-safety-agents",
+          "awslogs-region": "<REGION>",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "smartrx-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<EFS_ID>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": { "accessPointId": "<EFS_AP_DATA_ID>", "iam": "ENABLED" }
+      }
+    },
+    {
+      "name": "smartrx-audit-logs",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<EFS_ID>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": { "accessPointId": "<EFS_AP_LOGS_ID>", "iam": "ENABLED" }
+      }
+    },
+    { "name": "smartrx-tmp" }
+  ]
+}

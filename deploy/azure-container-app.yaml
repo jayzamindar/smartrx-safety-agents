@@ -1,0 +1,90 @@
+# Azure Container Apps YAML manifest for smartrx-safety-agents
+# Deploy with: az containerapp create -g <RG> -n smartrx-safety-agents --yaml deploy/azure-container-app.yaml
+type: Microsoft.App/containerApps
+location: eastus
+identity:
+  type: UserAssigned
+  userAssignedIdentities:
+    /subscriptions/<SUB_ID>/resourcegroups/<RG>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/smartrx-identity: {}
+properties:
+  managedEnvironmentId: /subscriptions/<SUB_ID>/resourceGroups/<RG>/providers/Microsoft.App/managedEnvironments/smartrx-env
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: 8080
+      transport: auto
+    registries:
+      - server: <ACR_NAME>.azurecr.io
+        identity: /subscriptions/<SUB_ID>/resourcegroups/<RG>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/smartrx-identity
+    secrets:
+      - name: mcp-api-key
+        keyVaultUrl: https://<KEYVAULT_NAME>.vault.azure.net/secrets/mcp-api-key
+        identity: /subscriptions/<SUB_ID>/resourcegroups/<RG>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/smartrx-identity
+      - name: plan-signing-secret
+        keyVaultUrl: https://<KEYVAULT_NAME>.vault.azure.net/secrets/plan-signing-secret
+        identity: /subscriptions/<SUB_ID>/resourcegroups/<RG>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/smartrx-identity
+      - name: webhook-secret
+        keyVaultUrl: https://<KEYVAULT_NAME>.vault.azure.net/secrets/webhook-secret
+        identity: /subscriptions/<SUB_ID>/resourcegroups/<RG>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/smartrx-identity
+      - name: gemini-api-key
+        keyVaultUrl: https://<KEYVAULT_NAME>.vault.azure.net/secrets/gemini-api-key
+        identity: /subscriptions/<SUB_ID>/resourcegroups/<RG>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/smartrx-identity
+  template:
+    containers:
+      - name: smartrx-safety-agents
+        image: <ACR_NAME>.azurecr.io/smartrx-safety-agents:v1.0.0
+        resources:
+          cpu: 1.0
+          memory: 2.0Gi
+        env:
+          - name: ENVIRONMENT
+            value: production
+          - name: REQUIRE_AUTH
+            value: "true"
+          - name: GEMINI_MODEL_NAME
+            value: gemini-3.8-flash-high
+          - name: GEMINI_THINKING_BUDGET
+            value: "2048"
+          - name: MAX_OUTPUT_TOKENS
+            value: "8192"
+          - name: SMARTRX_DB_PATH
+            value: /app/data/smartrx_ledger.db
+          - name: AUDIT_LOG_DIR
+            value: /app/audit_logs
+          - name: MCP_API_KEY
+            secretRef: mcp-api-key
+          - name: PLAN_SIGNING_SECRET
+            secretRef: plan-signing-secret
+          - name: SMARTRX_SAFETY_AGENTS_WEBHOOK_SECRET
+            secretRef: webhook-secret
+          - name: GEMINI_API_KEY
+            secretRef: gemini-api-key
+        volumeMounts:
+          - volumeName: smartrx-data
+            mountPath: /app/data
+          - volumeName: smartrx-audit-logs
+            mountPath: /app/audit_logs
+        probes:
+          - type: Readiness
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          - type: Liveness
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+    scale:
+      minReplicas: 1
+      maxReplicas: 1
+    volumes:
+      - name: smartrx-data
+        storageName: smartrx-azurefiles-data
+        storageType: AzureFile
+      - name: smartrx-audit-logs
+        storageName: smartrx-azurefiles-logs
+        storageType: AzureFile

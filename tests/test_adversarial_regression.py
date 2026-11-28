@@ -150,3 +150,16 @@ async def test_adversarial_mcp_oversized_jsonrpc_rejected(tmp_path: Path) -> Non
         from smartrx_safety_agents.guardrails.fhir_generator import build_clinical_task
 
         build_clinical_task(patient_token="   ", action_type="HOLD_PRESCRIPTION", description="x")
+
+
+def test_adversarial_phi_redactor_blocks_homoglyph_identifiers() -> None:
+    """PHIRedactor.contains_phi catches fullwidth/zero-width homoglyph PHI identifiers."""
+    from smartrx_safety_agents.heuristics.phi_redactor import PHIRedactor
+
+    assert (
+        PHIRedactor.contains_phi(
+            "Patient Ｊｏｈｎ\u200b Ｄｏｅ",
+            known_identifiers=("John Doe",),
+        )
+        is True
+    )
