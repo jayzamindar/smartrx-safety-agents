@@ -1,0 +1,116 @@
+name: SmartRx Enterprise CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14"]
+        include:
+          - python-version: "3.13"
+            experimental: false
+          - python-version: "3.14"
+            experimental: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Verify deterministic lockfile presence
+        run: |
+          test -s requirements.lock
+
+      - name: Install dependencies and audit tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" pip-audit
+
+      - name: Lint and format check (ruff)
+        run: |
+          ruff check src/ tests/
+          ruff format --check src/ tests/
+
+      - name: Strict static type check (mypy)
+        run: |
+          mypy src/
+
+      - name: Run pytest suite with 90% coverage gate
+        run: |
+          pytest -q --tb=short --cov=src/smartrx_safety_agents --cov-report=term:skip-covered --cov-fail-under=90
+
+      - name: Dependency vulnerability scan (pip-audit)
+        run: |
+          pip-audit --progress-spinner off
+
+      - name: PEP 639-aware license compliance audit
+        run: |
+          python - <<'PY'
+          import importlib.metadata as md
+          import sys
+
+          allowed_tokens = ("mit", "apache", "bsd", "isc", "psf", "mpl-2.0", "0bsd", "python software foundation")
+          blocked_tokens = ("gpl", "agpl", "lgpl", "sspl")
+          violations = []
+          for dist in md.distributions():
+              name = dist.metadata.get("Name", "unknown")
+              lic_expr = dist.metadata.get("License-Expression") or ""
+              lic_field = dist.metadata.get("License") or ""
+              classifiers = [c for c in (dist.metadata.get_all("Classifier") or []) if c.startswith("License ::")]
+              combined = " ".join([lic_expr, lic_field, *classifiers]).lower()
+              if any(b in combined for b in blocked_tokens) and not any(a in combined for a in allowed_tokens):
+                  violations.append((name, combined[:120]))
+          if violations:
+              print("License compliance violations:", violations)
+              sys.exit(1)
+          print("License compliance audit passed.")
+          PY
+
+      - name: Scoped secret scan
+        run: |
+          python - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          pattern = re.compile(r"(AIza[0-9A-Za-z_-]{35}|sk-[0-9A-Za-z]{20,}|ghp_[0-9A-Za-z]{36})")
+          hits = []
+          for path in pathlib.Path(".").rglob("*"):
+              if not path.is_file():
+                  continue
+              rel = path.as_posix()
+              if rel.startswith((".git/", ".venv/", ".mypy_cache/", ".pytest_cache/", ".ruff_cache/")):
+                  continue
+              if rel == ".github/workflows/ci.yml":
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+              for idx, line in enumerate(text.splitlines(), 1):
+                  if "pragma: allowlist secret" in line:
+                      continue
+                  if pattern.search(line):
+                      hits.append(f"{rel}:{idx}")
+          if hits:
+              print("Potential hardcoded secrets detected:", hits)
+              sys.exit(1)
+          print("Scoped secret scan passed.")
+          PY

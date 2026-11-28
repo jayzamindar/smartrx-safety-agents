@@ -26,9 +26,9 @@
 - `config/drug_interactions.json` - Schema-validated static DDI, allergy cross-reactivity, NTI, renal/hepatic, Beer's Criteria & CMS catalog.
 - `prompts/modules/` - Version-stamped (<80-line) clinical prompts for all 6 specialist agents.
 - `agents/` - `MultiTierLLMClient` (`llm_client.py`), 6 specialists (`specialists.py`), `SmartRxOrchestrator` (`orchestrator.py`).
-- `persistence/` - `AuditLedger` (`ledger.py`): SQLite WAL hash-chained store with per-operation FileLock & MVCC reads.
+- `persistence/` - `AuditLedger` & `JsonlAuditExporter` (`ledger.py`): SQLite WAL hash-chained store, FileLock writes, MVCC reads & daily JSONL rotation/pruning.
 - `api/` - `server.py` (FastAPI REST/SSE, 10MB guard, auth, `/api/v1/*`) & `mcp_server.py` (`smartrx://` stdio/SSE).
-- `observability.py` - OpenTelemetry spans, metrics, and structured logging.
+- `observability.py` - OpenTelemetry `trace_span`, `TelemetryManager` (`.shutdown()`), and thread-safe `InMemoryMetricsLedger`.
 - `seed_data.py` - Synthetic HL7 FHIR R4 bundle seeder & `TC-001`–`TC-008` benchmark runner (zero PHI).
 - `ui/` - `dashboard.py`: Three-Column Pharmacist HITL Workbench, BPMH diff, What-If Sandbox & 3-Tier traffic light.
 - `cli.py` - Click CLI (`status`, `reconcile --dry-run`, `benchmark`, `verify-audit`, `serve`, `mcp`).
@@ -43,3 +43,5 @@
 - `test_ledger.py` - SQLite WAL concurrency, MVCC read-bypass, migration tests.
 - `test_phase9_hardening.py` - Cryptographic HMAC, anti-replay, Unicode normalization.
 - `test_ui_and_seeder.py` - Pharmacist HITL Workbench, BPMH diff, What-If swap, circuit breaker & `TC-001`–`TC-008` seeder tests.
+- `test_observability_and_retention.py` - OpenTelemetry `trace_span`, `.shutdown()`, `InMemoryMetricsLedger`, and JSONL rotation/pruning tests.
+- `.github/workflows/ci.yml` - Python 3.13/3.14 CI matrix, `ruff`, `mypy`, `pytest` (>=90% cov), `pip-audit`, license & secret scan.

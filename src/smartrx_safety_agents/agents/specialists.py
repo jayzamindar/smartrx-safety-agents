@@ -264,9 +264,7 @@ class AdversarialAuditorAgent:
                 f"vs safety={safety.overall_risk_grade}"
             )
 
-        phi_leak = PHIRedactor.contains_phi(
-            liaison.pharmacist_summary, known_identifiers=known_phi
-        )
+        phi_leak = PHIRedactor.contains_phi(liaison.pharmacist_summary, known_identifiers=known_phi)
         det_hallucination = len(unverified) > 0
 
         def _fallback() -> AuditorOutput:
@@ -302,9 +300,7 @@ class AdversarialAuditorAgent:
         merged_citations = tuple(
             dict.fromkeys([*verified_citations, *result.parsed.verified_citations])
         )
-        merged_passed = (
-            not merged_hallucination and not merged_phi and result.parsed.audit_passed
-        )
+        merged_passed = not merged_hallucination and not merged_phi and result.parsed.audit_passed
         audited = AuditorOutput(
             hallucination_detected=merged_hallucination,
             phi_leak_detected=merged_phi,

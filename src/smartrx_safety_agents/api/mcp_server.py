@@ -57,9 +57,7 @@ class SmartRxMCPServer:
         if method == "initialize":
             client_proto = str(params.get("protocolVersion", PROTOCOL_VERSION))
             if not client_proto.startswith("2024-"):
-                return _jsonrpc_err(
-                    req_id, -32602, f"Unsupported protocolVersion: {client_proto}"
-                )
+                return _jsonrpc_err(req_id, -32602, f"Unsupported protocolVersion: {client_proto}")
             return _jsonrpc_ok(
                 req_id,
                 {

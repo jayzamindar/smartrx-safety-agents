@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal, cast
 
@@ -16,6 +18,105 @@ from smartrx_safety_agents.models.clinical import ActionType, RiskGrade
 
 _GENESIS_HASH = "0" * 64
 _SCHEMA_VERSION = 1
+_AUDIT_FILENAME_DATE_RE = re.compile(r"^audit-(\d{4}-\d{2}-\d{2})(?:\.\d+)?\.jsonl$")
+
+
+class JsonlAuditExporter:
+    """Thread-safe rotating daily JSONL audit exporter with retention pruning."""
+
+    def __init__(
+        self,
+        audit_dir: Path,
+        *,
+        max_file_bytes: int = 50 * 1024 * 1024,
+        max_retention_days: int = 30,
+        max_total_size_mb: int = 500,
+        filelock_timeout_sec: float = 10.0,
+    ) -> None:
+        self._audit_dir = audit_dir
+        self._max_file_bytes = max_file_bytes
+        self._max_retention_days = max_retention_days
+        self._max_total_bytes = max_total_size_mb * 1024 * 1024
+        self._filelock_timeout_sec = filelock_timeout_sec
+        self._lock_path = audit_dir / ".jsonl.lock"
+        self._audit_dir.mkdir(parents=True, exist_ok=True)
+
+    def _select_target_file(self, date_str: str, line_byte_len: int) -> Path:
+        base_path = self._audit_dir / f"audit-{date_str}.jsonl"
+        if (
+            not base_path.exists()
+            or (base_path.stat().st_size + line_byte_len) <= self._max_file_bytes
+        ):
+            return base_path
+        index = 1
+        while True:
+            rotated = self._audit_dir / f"audit-{date_str}.{index}.jsonl"
+            if (
+                not rotated.exists()
+                or (rotated.stat().st_size + line_byte_len) <= self._max_file_bytes
+            ):
+                return rotated
+            index += 1
+
+    @staticmethod
+    def _file_timestamp(path: Path) -> datetime:
+        match = _AUDIT_FILENAME_DATE_RE.match(path.name)
+        if match is not None:
+            return datetime.strptime(match.group(1), "%Y-%m-%d").replace(tzinfo=UTC)
+        return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+
+    def _prune_retention(self, *, ref_now: datetime, protected_path: Path) -> list[Path]:
+        removed: list[Path] = []
+        cutoff = ref_now.astimezone(UTC) - timedelta(days=self._max_retention_days)
+        candidates = sorted(
+            self._audit_dir.glob("audit-*.jsonl"),
+            key=lambda p: (self._file_timestamp(p), p.name),
+        )
+        remaining: list[Path] = []
+        for path in candidates:
+            if path != protected_path and self._file_timestamp(path) < cutoff:
+                path.unlink(missing_ok=True)
+                removed.append(path)
+            else:
+                remaining.append(path)
+
+        total_bytes = sum(p.stat().st_size for p in remaining if p.exists())
+        for path in remaining:
+            if total_bytes <= self._max_total_bytes:
+                break
+            if path == protected_path:
+                continue
+            size = path.stat().st_size if path.exists() else 0
+            path.unlink(missing_ok=True)
+            removed.append(path)
+            total_bytes -= size
+        return removed
+
+    def export_event(
+        self,
+        record: AuditEventRecord,
+        *,
+        now: datetime | None = None,
+    ) -> Path:
+        """Append an audit record as UTF-8 JSONL, rotating at 50MB and pruning retention."""
+        ref_now = (now or record.created_at).astimezone(UTC)
+        date_str = ref_now.strftime("%Y-%m-%d")
+        line = json.dumps(record.model_dump(mode="json"), sort_keys=True, ensure_ascii=False) + "\n"
+        line_bytes = line.encode("utf-8")
+
+        with FileLock(str(self._lock_path), timeout=self._filelock_timeout_sec):
+            target = self._select_target_file(date_str, len(line_bytes))
+            with target.open("a", encoding="utf-8") as handle:
+                handle.write(line)
+            self._prune_retention(ref_now=ref_now, protected_path=target)
+            return target
+
+    def prune_only(self, *, now: datetime | None = None) -> list[Path]:
+        """Run retention and total-size pruning without writing a new record."""
+        ref_now = (now or datetime.now(UTC)).astimezone(UTC)
+        with FileLock(str(self._lock_path), timeout=self._filelock_timeout_sec):
+            sentinel = self._audit_dir / ".prune-none"
+            return self._prune_retention(ref_now=ref_now, protected_path=sentinel)
 
 
 def _compute_row_hash(
@@ -60,11 +161,26 @@ class AuditLedger:
         db_path: Path,
         *,
         filelock_timeout_sec: float = 10.0,
+        audit_log_dir: Path | None = None,
+        max_file_bytes: int = 50 * 1024 * 1024,
+        max_retention_days: int = 30,
+        max_total_size_mb: int = 500,
     ) -> None:
         self._db_path = db_path
         self._lock_path = Path(f"{db_path}.lock")
         self._filelock_timeout_sec = filelock_timeout_sec
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._jsonl_exporter: JsonlAuditExporter | None = (
+            JsonlAuditExporter(
+                audit_log_dir,
+                max_file_bytes=max_file_bytes,
+                max_retention_days=max_retention_days,
+                max_total_size_mb=max_total_size_mb,
+                filelock_timeout_sec=filelock_timeout_sec,
+            )
+            if audit_log_dir is not None
+            else None
+        )
         self._initialize_schema()
 
     def _connect(self) -> sqlite3.Connection:
@@ -213,9 +329,13 @@ class AuditLedger:
                 inserted = conn.execute(
                     "SELECT * FROM audit_events WHERE id = ?;", (inserted_id,)
                 ).fetchone()
-                return self._row_to_record(inserted)
+                record = self._row_to_record(inserted)
             finally:
                 conn.close()
+
+        if self._jsonl_exporter is not None:
+            self._jsonl_exporter.export_event(record, now=created_at)
+        return record
 
     def get_by_idempotency_key(self, idempotency_key: str) -> AuditEventRecord | None:
         """Read an audit event by idempotency key via SQLite MVCC (no FileLock)."""

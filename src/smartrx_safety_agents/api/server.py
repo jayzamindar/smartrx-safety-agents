@@ -329,9 +329,7 @@ def create_app(
         from smartrx_safety_agents.heuristics.phi_redactor import PHIRedactor
 
         npi_token = (
-            PHIRedactor.tokenize_patient_id(req.npi_attestation)
-            if req.npi_attestation
-            else "NONE"
+            PHIRedactor.tokenize_patient_id(req.npi_attestation) if req.npi_attestation else "NONE"
         )
         override_note = (
             f"{req.decision}|code={req.clinical_justification_code or 'NONE'}"

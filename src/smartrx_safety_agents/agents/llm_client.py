@@ -25,9 +25,7 @@ T = TypeVar("T", bound=BaseModel)
 ALLOWED_GEMINI_FIELDS: Final[frozenset[str]] = frozenset(
     {"type", "description", "nullable", "enum", "properties", "items", "required", "title"}
 )
-DEFAULT_PROMPTS_DIR: Final[Path] = (
-    Path(__file__).resolve().parents[3] / "prompts" / "modules"
-)
+DEFAULT_PROMPTS_DIR: Final[Path] = Path(__file__).resolve().parents[3] / "prompts" / "modules"
 _THINK_TAG_RE: Final[re.Pattern[str]] = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 _CODE_FENCE_RE: Final[re.Pattern[str]] = re.compile(
     r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL | re.IGNORECASE
@@ -194,9 +192,7 @@ class MultiTierLLMClient:
             known_mrns=known_mrns,
         )
         scrubbed_payload = redaction.redacted_text
-        if PHIRedactor.contains_phi(
-            scrubbed_payload, known_identifiers=known_names + known_mrns
-        ):
+        if PHIRedactor.contains_phi(scrubbed_payload, known_identifiers=known_names + known_mrns):
             logger.warning(
                 "Residual PHI detected after scrubbing; routing to deterministic fallback."
             )

@@ -217,9 +217,7 @@ def format_agent_breadcrumbs(state: BlackboardState) -> tuple[str, ...]:
         ("Auditor", "AdversarialAuditorAgent"),
         ("Liaison", "PharmacistLiaisonAgent"),
     )
-    return tuple(
-        f"{label} [{state.tier_trace.get(key, 'pending')}]" for label, key in agents
-    )
+    return tuple(f"{label} [{state.tier_trace.get(key, 'pending')}]" for label, key in agents)
 
 
 def render_dashboard(state: BlackboardState | None = None) -> None:  # pragma: no cover

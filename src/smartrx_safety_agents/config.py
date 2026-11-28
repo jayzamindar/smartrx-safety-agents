@@ -40,6 +40,9 @@ class Settings(BaseSettings):
 
     smartrx_db_path: Path = Field(default=Path("data/smartrx_ledger.db"))
     audit_log_dir: Path = Field(default=Path("audit_logs"))
+    audit_log_max_retention_days: int = Field(default=30, ge=1)
+    audit_log_max_size_mb: int = Field(default=500, ge=1)
+    audit_log_max_file_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
     filelock_timeout_sec: float = Field(default=10.0, gt=0.0)
 
     max_session_token_budget: int = Field(default=500_000, gt=0)
