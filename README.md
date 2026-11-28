@@ -1,5 +1,7 @@
 # SmartRx Safety Agents (`smartrx-safety-agents`)
 
+**Enterprise Production-Grade Clinical AI Safety Gateway** — Deterministic-first medication reconciliation, HL7 FHIR R4 synthesis, cryptographic HMAC-SHA256 plan signing, and Dual-Transport MCP (`smartrx://`) governance.
+
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.13+" />
   <img src="https://img.shields.io/badge/Pydantic-v2%20Frozen-E92063?style=for-the-badge&logo=pydantic&logoColor=white" alt="Pydantic v2" />
@@ -36,40 +38,77 @@ When patients move between hospitals, clinics, and pharmacies, medication lists 
 
 ---
 
-## Visual Multi-Agent & Guardrail Execution Graph
+## Architecture & Agent Execution Graph Walkthrough
+
+### Numbered End-to-End Data Flow & MCP Architecture (`0`–`7`)
 
 ```mermaid
 flowchart TD
-    In["Untrusted Clinical Intake & EHR Text"] --> Redact["HIPAA PHI Redactor & NFKC/Zero-Width Normalizer"]
-    Redact -->|"Zero-PHI + Delimited"| Cascade["3-Tier Resilient LLM Cascade: Gemini 3.8 Flash -> OpenRouter -> Offline Heuristics"]
-    Cascade -->|"Parallel Stage 1"| Squad1["IntakeAgent & ClinicalHistoryAgent"]
-    Squad1 -->|"Stage 2 (Deterministic First)"| Safety["SafetyAuditorAgent -> DeterministicClinicalEngine"]
-    Safety -->|"Stage 3"| Ins["InsuranceAgent (Formulary & CMS Fallback)"]
-    Ins -->|"Stage 4 (<=3-Turn Circuit Breaker)"| Critic["AdversarialCriticAgent <-> PharmacistLiaisonAgent"]
-    Critic -->|"Stage 5 (Zero-Hallucination Gate)"| Guard["GuardrailEngine: ActionType Allowlist + Risk 1-5 + FHIR R4 Overwrite + Quarantine"]
-    Guard -->|"Canonical JSON Seal"| HMAC["HMAC-SHA256 Signer + <=300s expires_at Anti-Replay"]
-    HMAC -->|"FileLock Writes / MVCC Reads"| Ledger["SQLite WAL Hash-Chain Ledger & JSONL Audit Export"]
-    Ledger --> Out["HITL Pharmacist Workbench / FastAPI SSE & MCP (stdio + SSE)"]
+    S0["0. Incoming Request via MCP stdio / SSE or REST"] --> S1["1. MCP Gateway: 10MB Ceiling & Timing-Safe Auth"]
+    S1 -->|"HTTP 413 / 401 Fail-Closed"| S2["2. HIPAA PHI Redactor & NFKC/Homoglyph Normalizer"]
+    S2 -->|"Zero-PHI + Delimited"| S3["3. 6-Agent Squad & 3-Tier LLM Cascade (Gemini 3.8 Flash -> OpenRouter -> Offline Heuristics)"]
+    S3 -->|"Strict ActionType Enum"| S4["4. Deterministic GuardrailEngine & HL7 FHIR R4 Overwrite"]
+    S4 -->|"Risk 1-5 + Rollback + Quarantine"| S5["5. 3-Tier HITL Governance Gate (Red / Yellow / Green)"]
+    S5 -->|"Adjudicated Plan"| S6["6. Canonical JSON HMAC-SHA256 Signer & SQLite WAL Ledger"]
+    S6 -->|"FileLock Writes / MVCC Reads"| S7["7. Signed FHIR R4 Response & Audit Trail"]
 ```
 
-### How to Explain This Agent Graph in an Interview
-- **Separation of Probabilistic Reasoning vs. Deterministic Enforcement:** LLMs only propose structured assessments (`IntakeOutput`, `LiaisonOutput`). `GuardrailEngine` unconditionally discards any LLM-synthesized `draft_execution_payload` and overwrites `execution_payload` with deterministic HL7 FHIR R4 JSON (`MedicationRequest`, `DetectedIssue`, `Task`), eliminating command/order hallucination.
-- **Fail-Closed Quarantine & Enum Allowlist:** Any action outside the 6-value `ActionType` Literal Enum or any Risk $\ge 3$ action lacking deterministic rollback steps is quarantined fail-closed (`quarantined=True`) and escalated to a pharmacist (`ESCALATE_TO_CLINICAL_PHARMACIST`).
-- **3-Tier Resilience Cascade:** Primary Gemini (`thinkingBudget=2048`, `maxOutputTokens=8192`, `clean_gemini_schema()`) cascades automatically on any error/timeout/budget breach to Secondary OpenRouter (`<think>` stripping) and then to Tertiary `DeterministicClinicalEngine` (`100%` offline uptime; `CatalogNotFoundError` fail-closed).
-- **SQLite WAL MVCC Read-Bypass:** Cross-platform `filelock.FileLock` wraps **writes only** (offloaded via `asyncio.to_thread()`), while reads bypass `filelock` completely using SQLite WAL Multi-Version Concurrency Control—preventing writer starvation and SSE event-loop blocking.
+1. **0 — Incoming Request via MCP `stdio` / `SSE` or REST:** External EHR orchestrators, clinical workbenches, or AI clients submit medication reconciliation payloads over JSON-RPC 2.0 (`smartrx://reconcile/verify`) or FastAPI (`/api/v1/reconcile`).
+2. **1 — MCP Gateway (`10MB` Ceiling & Timing-Safe Auth):** `PayloadSizeLimitMiddleware` enforces a dual-layer `10 MB` (`10,485,760` bytes) cap (`Content-Length` fast-path + streaming chunk byte counter returning HTTP `413` / JSON-RPC `-32600`), while `hmac.compare_digest()` validates `MCP_API_KEY` (`401` fail-closed).
+3. **2 — HIPAA PHI Redactor & NFKC/Homoglyph Normalizer:** `normalize_clinical_identifier()` applies Unicode NFKC folding and strips zero-width characters before `PHIRedactor` tokenizes `MRN`, `SSN`, `DOB`, and patient names—guaranteeing zero PHI enters LLM prompts.
+4. **3 — 6-Agent Squad & 3-Tier LLM Cascade:** `SmartRxOrchestrator` executes `IntakeAgent` & `ClinicalHistoryAgent` in parallel $\to$ `SafetyAuditorAgent` $\to$ `InsuranceAgent` $\to$ `AdversarialAuditorAgent` $\leftrightarrow$ `PharmacistLiaisonAgent` (with a $\le 3$-turn `HALT_FOR_HUMAN` circuit breaker) across Primary **Gemini 3.8 Flash High** $\to$ Secondary **OpenRouter** (`<think>` strip) $\to$ Tertiary **Offline Deterministic Heuristics**.
+5. **4 — Deterministic `GuardrailEngine` & HL7 FHIR R4 Overwrite:** `GuardrailEngine` unconditionally discards any LLM-synthesized `draft_execution_payload`, enforces the 6-value `ActionType` Literal Enum allowlist, synthesizes deterministic HL7 FHIR R4 JSON (`MedicationRequest`, `DetectedIssue`, `Task`), and quarantines any Risk $\ge 3$ action lacking deterministic rollback steps.
+6. **5 — 3-Tier HITL Governance Gate (Red / Yellow / Green):** Classifies every adjudicated plan into Tier 1 RED (`< 0.70`), Tier 2 YELLOW (`0.70–0.89`), or Tier 3 GREEN (`≥ 0.90`) governance lanes.
+7. **6 — Canonical JSON HMAC-SHA256 Signer & SQLite WAL Ledger:** Seals the plan with a SHA-256 `plan_digest`, HMAC-SHA256 `plan_signature`, and `≤ 300s` `expires_at` anti-replay nonce, then persists it via per-operation `FileLock` (`asyncio.to_thread()`) to the SHA-256 hash-chained SQLite WAL ledger and daily JSONL audit exporter.
+8. **7 — Signed FHIR R4 Response & Audit Trail:** Returns the tamper-evident, signed HL7 FHIR R4 `Bundle` and provenance metadata to the caller and Pharmacist HITL Workbench.
+
+### Color-Coded 3-Tier HITL Governance Visual Walkthrough
+
+```mermaid
+flowchart TD
+    Eval["GuardrailEngine & Confidence Evaluation"] --> Check{"Confidence Score & Clinical Severity"}
+    Check -->|"< 0.70 OR Major DDI / Allergy / NTI OCR Failure"| Red["TIER 1 RED: Mandatory Hard Lock (HOLD_PRESCRIPTION)"]
+    Check -->|"0.70 - 0.89 OR Moderate DDI / Renal-Hepatic / Prior Auth"| Yellow["TIER 2 YELLOW: Affirmative Pharmacist Review"]
+    Check -->|">= 0.90 AND Zero Conflicts"| Green["TIER 3 GREEN: Passive Observation"]
+
+    Red --> RedAct["Requires Structured Clinical Justification Code + Digital NPI Attestation to Override"]
+    Yellow --> YellowAct["Pharmacist Must Review & Accept or Modify (with Reason Text)"]
+    Green --> GreenAct["Non-Blocking Auto-Log to Immutable SHA-256 SQLite WAL Audit Trail"]
+
+    style Red fill:#dc2626,color:#ffffff,stroke:#991b1b,stroke-width:2px
+    style RedAct fill:#fef2f2,color:#991b1b,stroke:#dc2626,stroke-width:1px
+    style Yellow fill:#d97706,color:#ffffff,stroke:#92400e,stroke-width:2px
+    style YellowAct fill:#fffbeb,color:#92400e,stroke:#d97706,stroke-width:1px
+    style Green fill:#16a34a,color:#ffffff,stroke:#166534,stroke-width:2px
+    style GreenAct fill:#f0fdf4,color:#166534,stroke:#16a34a,stroke-width:1px
+```
+
+- **Key Architectural Guarantees:**
+  - **Separation of Probabilistic Reasoning vs. Deterministic Enforcement:** LLMs only propose structured assessments (`IntakeOutput`, `LiaisonOutput`). `GuardrailEngine` unconditionally discards any LLM-synthesized `draft_execution_payload` and overwrites `execution_payload` with deterministic HL7 FHIR R4 JSON (`MedicationRequest`, `DetectedIssue`, `Task`), eliminating command/order hallucination.
+  - **Fail-Closed Quarantine & Enum Allowlist:** Any action outside the 6-value `ActionType` Literal Enum or any Risk $\ge 3$ action lacking deterministic rollback steps is quarantined fail-closed (`quarantined=True`) and escalated to a pharmacist (`ESCALATE_TO_CLINICAL_PHARMACIST`).
+  - **3-Tier Resilience Cascade:** Primary Gemini (`thinkingBudget=2048`, `maxOutputTokens=8192`, `clean_gemini_schema()`) cascades automatically on any error/timeout/budget breach to Secondary OpenRouter (`<think>` stripping) and then to Tertiary `DeterministicClinicalEngine` (`100%` offline uptime; `CatalogNotFoundError` fail-closed).
+  - **SQLite WAL MVCC Read-Bypass:** Cross-platform `filelock.FileLock` wraps **writes only** (offloaded via `asyncio.to_thread()`), while reads bypass `filelock` completely using SQLite WAL Multi-Version Concurrency Control—preventing writer starvation and SSE event-loop blocking.
 
 ---
 
-## How the Multi-Agent System & MCP Server Work Together (Interviewer Walkthrough)
+## Multi-Agent Orchestration & MCP Gateway Lifecycle
 
-**Mental Model:** Think of the **Dual-Transport MCP Server** ([`api/mcp_server.py`](src/smartrx_safety_agents/api/mcp_server.py) & [`api/server.py`](src/smartrx_safety_agents/api/server.py)) as the standardized **JSON-RPC 2.0 front-door gateway**, and the **6-Agent Orchestrator + `GuardrailEngine`** as the **internal clinical safety engine**. External AI clients (Claude Desktop, IDE agents, or enterprise EHR orchestrators) only speak standard MCP (`smartrx://`)—they never need to know how the 6 agents, 3-tier LLM cascade, or deterministic FHIR R4 guardrails work under the hood.
+**Architectural Model:** The **Dual-Transport MCP Server** ([`api/mcp_server.py`](src/smartrx_safety_agents/api/mcp_server.py) & [`api/server.py`](src/smartrx_safety_agents/api/server.py)) serves as the standardized **JSON-RPC 2.0 front-door gateway**, isolating external AI clients (Claude Desktop, IDE agents, or enterprise EHR orchestrators) behind standard MCP (`smartrx://`) contracts while encapsulating the **6-Agent Orchestrator + `GuardrailEngine`** as the internal clinical safety engine.
 
-### 5-Step End-to-End Request Lifecycle
-1. **Step 1 — MCP Transport Gateway:** Enforces the dual-layer `10 MB` (`10,485,760` bytes) body ceiling (HTTP `413` / JSON-RPC `-32600`) and constant-time `hmac.compare_digest()` authentication (`401`).
-2. **Step 2 — Pre-Processing & HIPAA PHI Shield:** Validates strict frozen Pydantic v2 contracts (`extra="forbid"`), normalizes Unicode NFKC + strips zero-width homoglyphs (`normalize_clinical_identifier()`), and tokenizes PHI (`MRN`, `SSN`, `DOB`, names) via `PHIRedactor` before any LLM call.
-3. **Step 3 — 6-Agent Orchestration Squad (3-Tier Resilient Cascade):** Runs `IntakeAgent` & `ClinicalHistoryAgent` $\to$ `SafetyAuditorAgent` $\to$ `InsuranceAgent` $\to$ `AdversarialCriticAgent` $\leftrightarrow$ `PharmacistLiaisonAgent` across Primary **Gemini 3.8 Flash High** $\to$ Secondary **OpenRouter** $\to$ Tertiary **Offline Deterministic Heuristics**, outputting strict `ActionType` enums only.
-4. **Step 4 — Deterministic `GuardrailEngine` Enforcement:** Runs deterministic DDI, allergy, Beer's Criteria, and eGFR/CrCl rules; unconditionally overwrites `execution_payload` with HL7 FHIR R4 JSON (`MedicationRequest`, `DetectedIssue`, `Task`); quarantines Risk $\ge 3$ actions lacking rollback steps; and seals the plan with canonical JSON HMAC-SHA256 + `300s` `expires_at` anti-replay TTL.
-5. **Step 5 — SQLite WAL Persistence & MCP Response:** Offloads writes via `asyncio.to_thread()` with write-only `FileLock` (preserving lock-free MVCC reads) and returns the signed HL7 FHIR R4 response over JSON-RPC 2.0.
+### Task Orchestration Registry (`T001`–`T008`)
+
+Every clinical reconciliation request is decomposed into eight traceable tasks mapped directly to production modules (see the standalone [`T001` Process Prescription Deep-Dive & Request State Machine](docs/ARCHITECTURE.md#3-request-lifecycle-state-machine)):
+
+| Task ID | Task Name | Mapped Module / Agent | Execution & Safety Responsibility |
+|---|---|---|---|
+| **`T001`** | **Process Prescription** | [`SmartRxOrchestrator`](src/smartrx_safety_agents/agents/orchestrator.py) | End-to-end 5-stage orchestration, `BlackboardState` management, 3-turn circuit breaker, and ledger commit. |
+| **`T002`** | **Intake Prescription** | [`IntakeAgent`](src/smartrx_safety_agents/agents/specialists.py) & [`PHIRedactor`](src/smartrx_safety_agents/heuristics/phi_redactor.py) | Pre-LLM PHI scrubbing, Unicode NFKC normalization, and RxNorm RxCUI / OCR confidence extraction. |
+| **`T003`** | **Retrieve Patient History** | [`ClinicalHistoryAgent`](src/smartrx_safety_agents/agents/specialists.py) | Parallel longitudinal EHR medication, allergy, and eGFR/CrCl/hepatic lab consolidation. |
+| **`T004`** | **Safety Audit** | [`SafetyAuditorAgent`](src/smartrx_safety_agents/agents/specialists.py) & [`DeterministicClinicalEngine`](src/smartrx_safety_agents/heuristics/engine.py) | Deterministic-first DDI, allergy cross-reactivity, Beer's Criteria, and NTI dosing-bound verification. |
+| **`T005`** | **Insurance Check** | [`InsuranceAgent`](src/smartrx_safety_agents/agents/specialists.py) & [`FormularyChecker`](src/smartrx_safety_agents/heuristics/formulary_checker.py) | Formulary coverage verification, Prior Authorization detection, and CMS therapeutic fallback. |
+| **`T006`** | **Generate Summary** | [`PharmacistLiaisonAgent`](src/smartrx_safety_agents/agents/specialists.py) & [`AdversarialAuditorAgent`](src/smartrx_safety_agents/agents/specialists.py) | Structured clinical summary synthesis and $\le 3$-turn adversarial safety verification loop. |
+| **`T007`** | **Validate Output** | [`GuardrailEngine`](src/smartrx_safety_agents/guardrails/engine.py) & [`fhir_generator.py`](src/smartrx_safety_agents/guardrails/fhir_generator.py) | `ActionType` allowlist, Risk 1–5 scoring, deterministic HL7 FHIR R4 overwrite, quarantine & HMAC-SHA256 signing. |
+| **`T008`** | **Human Review** | [`ui/dashboard.py`](src/smartrx_safety_agents/ui/dashboard.py) & `/api/v1/adjudicate` | 3-Tier HITL Pharmacist Workbench (RED NPI attestation, YELLOW review/modify, GREEN auto-log). |
 
 ### The 3 MCP Primitives & Dual-Transport (`stdio` vs. `SSE`)
 
