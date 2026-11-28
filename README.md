@@ -60,6 +60,32 @@ flowchart TD
 
 ---
 
+## How the Multi-Agent System & MCP Server Work Together (Interviewer Walkthrough)
+
+**Mental Model:** Think of the **Dual-Transport MCP Server** ([`api/mcp_server.py`](src/smartrx_safety_agents/api/mcp_server.py) & [`api/server.py`](src/smartrx_safety_agents/api/server.py)) as the standardized **JSON-RPC 2.0 front-door gateway**, and the **6-Agent Orchestrator + `GuardrailEngine`** as the **internal clinical safety engine**. External AI clients (Claude Desktop, IDE agents, or enterprise EHR orchestrators) only speak standard MCP (`smartrx://`)—they never need to know how the 6 agents, 3-tier LLM cascade, or deterministic FHIR R4 guardrails work under the hood.
+
+### 5-Step End-to-End Request Lifecycle
+1. **Step 1 — MCP Transport Gateway:** Enforces the dual-layer `10 MB` (`10,485,760` bytes) body ceiling (HTTP `413` / JSON-RPC `-32600`) and constant-time `hmac.compare_digest()` authentication (`401`).
+2. **Step 2 — Pre-Processing & HIPAA PHI Shield:** Validates strict frozen Pydantic v2 contracts (`extra="forbid"`), normalizes Unicode NFKC + strips zero-width homoglyphs (`normalize_clinical_identifier()`), and tokenizes PHI (`MRN`, `SSN`, `DOB`, names) via `PHIRedactor` before any LLM call.
+3. **Step 3 — 6-Agent Orchestration Squad (3-Tier Resilient Cascade):** Runs `IntakeAgent` & `ClinicalHistoryAgent` $\to$ `SafetyAuditorAgent` $\to$ `InsuranceAgent` $\to$ `AdversarialCriticAgent` $\leftrightarrow$ `PharmacistLiaisonAgent` across Primary **Gemini 3.8 Flash High** $\to$ Secondary **OpenRouter** $\to$ Tertiary **Offline Deterministic Heuristics**, outputting strict `ActionType` enums only.
+4. **Step 4 — Deterministic `GuardrailEngine` Enforcement:** Runs deterministic DDI, allergy, Beer's Criteria, and eGFR/CrCl rules; unconditionally overwrites `execution_payload` with HL7 FHIR R4 JSON (`MedicationRequest`, `DetectedIssue`, `Task`); quarantines Risk $\ge 3$ actions lacking rollback steps; and seals the plan with canonical JSON HMAC-SHA256 + `300s` `expires_at` anti-replay TTL.
+5. **Step 5 — SQLite WAL Persistence & MCP Response:** Offloads writes via `asyncio.to_thread()` with write-only `FileLock` (preserving lock-free MVCC reads) and returns the signed HL7 FHIR R4 response over JSON-RPC 2.0.
+
+### The 3 MCP Primitives & Dual-Transport (`stdio` vs. `SSE`)
+
+| MCP Primitive | Method | SmartRx Endpoint / URI | Purpose |
+|---|---|---|---|
+| **Tools** | `tools/call` | `smartrx://reconcile/verify` | Executes the full 6-agent + `GuardrailEngine` medication reconciliation pipeline. |
+| **Resources** | `resources/read` | `smartrx://catalog/interactions`, `smartrx://audit/escalations` | Exposes the read-only clinical DDI/NTI catalog and hash-chained HITL escalation ledger. |
+| **Prompts** | `prompts/get` | `clinical_reconciliation_review` | Supplies structured pharmacist HITL review prompts parameterized by `patient_token` and `risk_grade`. |
+
+| Transport Mode | Target Clients | Security & Concurrency Model |
+|---|---|---|
+| **Local `stdio`** (`smartrx-safety-agents mcp --transport stdio`) | Desktop AI clients (Claude Desktop, IDE agents) | Zero open network ports; JSON-RPC 2.0 over `stdin`/`stdout` with `10 MB` line cap and `stderr` log isolation. |
+| **Remote Authenticated `SSE`** (`smartrx-safety-agents serve`) | Cloud microservices, EHR orchestrators, web agents | HTTPS + timing-safe `hmac.compare_digest()` auth (`Bearer` / `X-API-Key` / `?apiKey=` redacted), `10 MB` streaming guard, and `asyncio.to_thread()` DB writes. |
+
+---
+
 ## Zero-Token Deterministic Testing & Edge-Case Coverage
 
 All 60 automated tests execute **100% offline in Python in `< 10` seconds at `$0.00` token cost**. Networked LLM calls are isolated strictly at the `httpx.MockTransport` HTTP boundary inside `MultiTierLLMClient`, while every clinical heuristic, FHIR R4 generator, HMAC-SHA256 verifier, FastAPI/MCP transport middleware, and SQLite WAL ledger runs against real, unmocked production code—eliminating LLM flakiness and API spend in CI/CD.
