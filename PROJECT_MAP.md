@@ -49,3 +49,6 @@
 - `docker-compose.prod.yml` & `deploy/` - Read-only rootfs prod compose, `smartrx-safety-agents-deploy.sh`, `serverless-container.yaml`, `Dockerfile.serverless`.
 - `docs/Ephemeral_Ledger_Architecture.md` - SQLite WAL POSIX volume requirements and JSONL object-storage sync architecture.
 - `docs/SECURITY_HARDENING.md` - Phase 9 security controls matrix, `?apiKey` access-log advisory & `.env` hygiene.
+- `docs/Cloud_Deployment_Guide.md` - AWS ECS/Fargate, Azure Container Apps, K8s, IAM, OIDC & blue/green rollback.
+- `docs/MONITORING_AND_OBSERVABILITY.md` - Infra/RAM/WAL thresholds, API/MCP SLAs, AI governance & security alerts.
+- `Blueprint_Production_Readiness_Report.md` - 8-pillar SRE Production Readiness Review (100/100 PASS).

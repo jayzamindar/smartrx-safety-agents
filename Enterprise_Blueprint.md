@@ -204,9 +204,9 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 *Goal: Formulate comprehensive operational manuals and SRE readiness reviews for Standard Enterprise Cloud (AWS / Azure / Kubernetes) deployment.*
 *(Batching Guidance: Pure documentation and operational sign-off tasks 10.1–10.3 may be executed as a single cohesive batch followed by one link/schema verification pass).*
 
-- [ ] **10.1 Production Deployment Guide:** Author `docs/Cloud_Deployment_Guide.md` providing end-to-end guidance for Standard Enterprise Cloud (AWS / Azure / Kubernetes), IAM least-privilege policies, secrets management, container pipelines, GitHub Actions OIDC CI/CD, and rollback runbooks.
-- [ ] **10.2 SRE Production Readiness Review:** Author `Blueprint_Production_Readiness_Report.md` evaluating the repository across 8 operational pillars, requiring a 100/100 score and PASS verdict across security controls, AI reasoning safety, FinOps guardrails, and concurrency bounds.
-- [ ] **10.3 Test Suite Integrity Validation:** Verify 100% of automated unit, integration, and security tests pass cleanly in under 15 seconds.
+- [x] **10.1 Production Deployment Guide:** Author `docs/Cloud_Deployment_Guide.md` providing end-to-end guidance for Standard Enterprise Cloud (AWS / Azure / Kubernetes), IAM least-privilege policies, secrets management, container pipelines, GitHub Actions OIDC CI/CD, and rollback runbooks.
+- [x] **10.2 SRE Production Readiness Review:** Author `Blueprint_Production_Readiness_Report.md` evaluating the repository across 8 operational pillars, requiring a 100/100 score and PASS verdict across security controls, AI reasoning safety, FinOps guardrails, and concurrency bounds.
+- [x] **10.3 Test Suite Integrity Validation:** Verify 100% of automated unit, integration, and security tests pass cleanly in under 15 seconds.
 
 ---
 
@@ -214,26 +214,26 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 *Goal: Establish comprehensive post-deployment monitoring, alerting thresholds, and runbooks across the Four Golden Signals and AI governance.*
 *(Batching Guidance: Observability manual, telemetry, and alerting tasks 11.1–11.5 may be executed as a single cohesive batch followed by one link/schema verification pass).*
 
-- [ ] **11.1 Author Monitoring & Observability Manual:** Create `docs/MONITORING_AND_OBSERVABILITY.md` detailing operational monitoring standards.
-- [ ] **11.2 Infrastructure & Container Health Monitoring:**
+- [x] **11.1 Author Monitoring & Observability Manual:** Create `docs/MONITORING_AND_OBSERVABILITY.md` detailing operational monitoring standards.
+- [x] **11.2 Infrastructure & Container Health Monitoring:**
   - Define CPU utilization thresholds ($> 80\%$ warning, $> 95\%$ critical).
   - Define memory ceiling monitor hard-capped at 2048MB (OOM watch trigger at 1750MB / $88\%$; drop active reasoning round).
   - Define SQLite WAL file size monitoring (trigger checkpointing alert when `smartrx_ledger.db-wal > 50\text{ MB}`).
   - Define `audit_logs/` JSONL directory disk monitoring (trigger retention prune alert when `audit_logs/ > 500\text{ MB}` or file age $> 30\text{ days}$).
   - Monitor container restart loops and Docker health status via `/health` and `/ready` probes.
-- [ ] **11.3 API & MCP Transport Telemetry:**
+- [x] **11.3 API & MCP Transport Telemetry:**
   - Track request throughput (requests/sec) and p50, p95, p99 latency targets ($< 500\text{ ms}$ for heuristics, $< 3500\text{ ms}$ for Gemini reasoning).
   - Track HTTP 4xx/5xx error rates with a strict error budget ($< 0.1\%$).
   - Track HTTP 413 Payload Too Large violations (> 10MB breach detection).
   - Monitor HTTP 401 authentication failure spikes ($> 5$ failures/minute) to detect brute-force attacks.
   - Track active concurrent Server-Sent Events (SSE) connections.
-- [ ] **11.4 AI & Model Governance Telemetry:**
+- [x] **11.4 AI & Model Governance Telemetry:**
   - Track Gemini 3.8 Flash token consumption: prompt tokens, output tokens (capped at 8192 tokens/request), and `thinkingBudget` utilization.
   - Track `responseSchema` validation failure rate (alert if $> 0.5\%$).
   - Track Gemini HTTP 429/503 rate-limit events and retry backoff delays.
   - Monitor fallback cascade frequency: Primary Gemini $\to$ Secondary OpenRouter $\to$ Tertiary Deterministic Heuristics. Alert if fallback rate $> 2.0\%$.
   - Track high-risk action quarantine frequency (`quarantined=True` rate) and `CatalogNotFoundError` occurrences.
-- [ ] **11.5 Security & Audit Integrity Telemetry:**
+- [x] **11.5 Security & Audit Integrity Telemetry:**
   - Monitor HMAC-SHA256 signature verification failures (alert immediately on any failure as a potential tampering incident).
   - Track prompt-injection sanitization triggers and suspicious tag occurrences.
   - Configure alert routing to AWS CloudWatch Alarms, OpenTelemetry OTLP collectors, and Slack/PagerDuty webhooks.
