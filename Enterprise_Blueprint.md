@@ -32,9 +32,9 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 ### Phase 0: [UNIVERSAL CORE] Requirements, Architecture & Navigation Hub
 *Goal: Establish institutional-grade specifications, hyperlinked documentation navigation, and audit baselines before executing codebase changes.*
 
-- [ ] **0.1 Forensic Baseline Audit:** Author `Blueprint_Repo_Baseline_AuditReport.md` evaluating the repository across 10 enterprise dimensions with letter grades and technical debt backlog.
-- [ ] **0.2 Product Requirements Document:** Author `docs/PRD.md` detailing product vision, personas, functional capabilities (FS-1 to FS-8), edge cases, and KPIs.
-- [ ] **0.3 Technical Requirements Document:** Author `docs/TRD.md` specifying JSON-RPC 2.0 contracts, mathematical waste formulas, Gemini thinking budget payload specs, 10MB payload ceiling, 8192 output token cap, and NFRs.
+- [x] **0.1 Forensic Baseline Audit:** Author `Blueprint_Repo_Baseline_AuditReport.md` evaluating the repository across 10 enterprise dimensions with letter grades and technical debt backlog.
+- [x] **0.2 Product Requirements Document:** Author `docs/PRD.md` detailing product vision, personas, functional capabilities (FS-1 to FS-8), edge cases, and KPIs.
+- [x] **0.3 Technical Requirements Document:** Author `docs/TRD.md` specifying JSON-RPC 2.0 contracts, mathematical waste formulas, Gemini thinking budget payload specs, 10MB payload ceiling, 8192 output token cap, and NFRs.
 - [ ] **0.4 Harmonize User Requirements:** Author/update `docs/URD.md` aligning multi-model fallback, dual MCP transports, and persona workflows.
 - [ ] **0.5 Harmonize System Architecture:** Author/update `docs/ARCHITECTURE.md` with revised C4 container diagrams, sequence flows, SQLite MVCC read-bypass architecture, and decoupled subsystem boundaries.
 - [ ] **0.6 Master Production Backlog:** Maintain `Enterprise_Blueprint.md` as the living engineering roadmap and task checklist.
@@ -60,12 +60,12 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 ### Phase 1: [UNIVERSAL CORE] Foundation, Packaging & Environment Security
 *Goal: Standardize packaging for Python 3.13+, establish security hygiene, and install CLI console entrypoints.*
 
-- [ ] **1.1 PEP 517/621 Packaging:** Create/update `pyproject.toml` declaring dependencies, metadata, `pytest-timeout` (`timeout = 15`, `timeout_method = "thread"`), and the `smartrx-safety-agents` console script entrypoint targeting Python 3.13+.
-- [ ] **1.2 Clean Environment Template:** Create `.env.example` documenting all configuration keys (`GEMINI_API_KEY`, `GEMINI_MODEL_NAME`, `GEMINI_THINKING_BUDGET`, `MAX_OUTPUT_TOKENS`, `MAX_PAYLOAD_SIZE_BYTES`, `MAX_SESSION_TOKEN_BUDGET`, `DAILY_API_COST_LIMIT_USD`, `OPENROUTER_API_KEY`, `MCP_API_KEY`, `PLAN_SIGNING_SECRET`, `SMARTRX_SAFETY_AGENTS_WEBHOOK_SECRET`, `ENVIRONMENT`, `REQUIRE_AUTH`, `DB_PATH`, `AUDIT_LOG_DIR`, `FILELOCK_TIMEOUT_SEC`, `PORT`) without exposing secrets, and document cross-platform setup commands (`cp .env.example .env` / `Copy-Item .env.example .env`).
-- [ ] **1.3 Git Security Hygiene:** Overhaul `.gitignore` to prevent committing `.env`, virtual environments, SQLite databases (`*.db`, `*.db-wal`, `*.db-shm`), egg-info, or test caches. Verify via `git check-ignore -v .env`.
-- [ ] **1.4 Remove Stray Scaffolding:** Purge legacy or foreign configs (`.continue/`, stale draft directories) referencing unrelated models or obsolete frameworks.
-- [ ] **1.5 Master Agent Handbook:** Deploy `GEMINI.md` in repository root as the Universal Enterprise Master Handbook featuring the `[PROJECT_CONFIGURATION]` block and Template Cloning Note.
-- [ ] **1.6 Editable Installation & Deterministic Lockfile:** Verify clean installation in a fresh virtual environment (`pip install -e ".[dev]"`), and generate and commit a deterministic lockfile (`uv.lock` or `requirements.lock`) to anchor supply-chain dependencies.
+- [x] **1.1 PEP 517/621 Packaging:** Create/update `pyproject.toml` declaring dependencies, metadata, `pytest-timeout` (`timeout = 15`, `timeout_method = "thread"`), and the `smartrx-safety-agents` console script entrypoint targeting Python 3.13+.
+- [x] **1.2 Clean Environment Template:** Create `.env.example` documenting all configuration keys (`GEMINI_API_KEY`, `GEMINI_MODEL_NAME`, `GEMINI_THINKING_BUDGET`, `MAX_OUTPUT_TOKENS`, `MAX_PAYLOAD_SIZE_BYTES`, `MAX_SESSION_TOKEN_BUDGET`, `DAILY_API_COST_LIMIT_USD`, `OPENROUTER_API_KEY`, `MCP_API_KEY`, `PLAN_SIGNING_SECRET`, `SMARTRX_SAFETY_AGENTS_WEBHOOK_SECRET`, `ENVIRONMENT`, `REQUIRE_AUTH`, `DB_PATH`, `AUDIT_LOG_DIR`, `FILELOCK_TIMEOUT_SEC`, `PORT`) without exposing secrets, and document cross-platform setup commands (`cp .env.example .env` / `Copy-Item .env.example .env`).
+- [x] **1.3 Git Security Hygiene:** Overhaul `.gitignore` to prevent committing `.env`, virtual environments, SQLite databases (`*.db`, `*.db-wal`, `*.db-shm`), egg-info, or test caches. Verify via `git check-ignore -v .env`.
+- [x] **1.4 Remove Stray Scaffolding:** Purge legacy or foreign configs (`.continue/`, stale draft directories) referencing unrelated models or obsolete frameworks.
+- [x] **1.5 Master Agent Handbook:** Deploy `GEMINI.md` in repository root as the Universal Enterprise Master Handbook featuring the `[PROJECT_CONFIGURATION]` block and Template Cloning Note.
+- [x] **1.6 Editable Installation & Deterministic Lockfile:** Verify clean installation in a fresh virtual environment (`pip install -e ".[dev]"`), and generate and commit a deterministic lockfile (`uv.lock` or `requirements.lock`) to anchor supply-chain dependencies.
 
 ---
 
