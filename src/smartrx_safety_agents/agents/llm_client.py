@@ -123,8 +123,12 @@ def clean_gemini_schema(schema: dict[str, Any]) -> dict[str, Any]:
                 continue
             if key == "properties" and isinstance(value, dict):
                 cleaned["properties"] = {
-                    prop_k: _resolve_node(prop_v, seen_refs) for prop_k, prop_v in value.items()
+                    prop_k: _resolve_node(prop_v, seen_refs)
+                    for prop_k, prop_v in value.items()
+                    if prop_k != "execution_payload"
                 }
+            elif key == "required" and isinstance(value, list):
+                cleaned["required"] = [item for item in value if item != "execution_payload"]
             elif key == "items" and isinstance(value, dict):
                 cleaned["items"] = _resolve_node(value, seen_refs)
             else:

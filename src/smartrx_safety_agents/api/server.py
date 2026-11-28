@@ -44,7 +44,7 @@ class SensitiveQueryParamFilter(logging.Filter):
         return True
 
 
-class _PayloadTooLargeError(Exception):
+class _PayloadTooLargeError(BaseException):
     """Internal signal raised when streaming request body exceeds max_bytes."""
 
 

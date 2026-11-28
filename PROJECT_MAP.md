@@ -48,3 +48,4 @@
 - `Dockerfile` & `docker-compose.yml` - Multi-stage non-root (`smartrx` UID 10001) runtime image, `mem_limit: 2048m`, `/health` probe.
 - `docker-compose.prod.yml` & `deploy/` - Read-only rootfs prod compose, `smartrx-safety-agents-deploy.sh`, `serverless-container.yaml`, `Dockerfile.serverless`.
 - `docs/Ephemeral_Ledger_Architecture.md` - SQLite WAL POSIX volume requirements and JSONL object-storage sync architecture.
+- `docs/SECURITY_HARDENING.md` - Phase 9 security controls matrix, `?apiKey` access-log advisory & `.env` hygiene.

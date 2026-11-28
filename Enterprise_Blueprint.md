@@ -175,28 +175,28 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 ### Phase 9: [UNIVERSAL CORE & DOMAIN HARDENING] Enterprise Security Hardening & Zero-Hallucination Guardrails
 *Goal: Systematize all 22 Phase 9 hardening controls into permanent automated invariants.*
 
-- [ ] **9.1 Authenticated SSE Transport, Streaming Chunk Counter & Async Offloading:** Dual-header and query parameter authentication with 401 Unauthorized rejection; dual-layer 10MB payload size limit middleware (fast-path header inspection + streaming chunk counter for chunked requests rejecting with HTTP 413); and `asyncio.to_thread()` offloading for all database writes.
-- [ ] **9.2 Cryptographic HMAC-SHA256 Plan Signing:** Tamper-evident signing using server-side secret with `verify_plan_signature()` helper and strict canonical JSON serialization.
-- [ ] **9.3 Fail-Closed Contraindication Escalation:** Deterministically trigger `HOLD_PRESCRIPTION` and `ESCALATE_TO_CLINICAL_PHARMACIST` for any severe/major DDI, duplicate therapy class, or documented patient allergy cross-reactivity.
-- [ ] **9.4 Organ-Function Dosing Bounds:** Enforce renal (`eGFR`/`CrCl`) and hepatic dosing ceiling checks, deterministically triggering `REQUEST_RENAL_HEPATIC_LABS` when labs are missing for narrow-therapeutic-index drugs.
-- [ ] **9.5 Quarantine Pattern for Missing Mitigations & Invalid Enums:** Quarantine Risk $\ge 3$ actions lacking explicit mitigations or actions with invalid Enum types.
-- [ ] **9.6 Gemini `responseSchema` Dereferencing & Token Cap:** Dereference `$defs`, strip unsupported fields via `ALLOWED_GEMINI_FIELDS`, and enforce `maxOutputTokens=8192` with high-thinking RAM guardrails.
-- [ ] **9.7 FHIR Audit Log Persistence & Distributed Durability:** Document distributed synchronization options for SQLite WAL ledgers and FHIR audit logs with deterministic HIPAA PHI redaction.
-- [ ] **9.8 Deterministic FHIR R4 Payload Execution Overwriting:** Strip and discard any LLM-generated execution payloads, replacing them with deterministic HL7 FHIR R4 JSON generators (`MedicationRequest`, `DetectedIssue`, `Task`) to verify zero LLM synthesis of clinical orders.
-- [ ] **9.9 Real AWS Pricing Catalog Lookup & CatalogNotFoundError:** Real rate lookup in `config/instance_mappings.json` calculating `(curr_rate - tgt_rate) * 730.0`; raises `CatalogNotFoundError` on missing catalog and routes to Tertiary engine.
-- [ ] **9.10 Constant-Time Authentication & Fail-Closed Enforcement:** `hmac.compare_digest()` matching with fail-closed production checks.
-- [ ] **9.11 Verification Test Suite Expansion:** Dedicated unit tests for all security controls in `tests/test_phase9_hardening.py`.
-- [ ] **9.12 Gemini `responseSchema` OpenAPI 3.0 `anyOf` Collapse:** Collapse Pydantic `{"anyOf": [{"type": "..."}, {"type": "null"}]}` into OpenAPI 3.0 `{"type": "...", "nullable": True}`.
-- [ ] **9.13 Full Cryptographic Seal on `execution_payload`:** Include `execution_payload` in HMAC canonical payload hash.
-- [ ] **9.14 Query Parameter API Key Plaintext Logging Advisory:** Publish SecOps guidance on URL query parameter exposure in access logs.
-- [ ] **9.15 Pre-Commit Repository Hygiene:** Enforce zero un-ignored `.env` files and verify cleanliness via pre-commit hooks.
-- [ ] **9.16 Live Gemini API Schema Pre-Flight Verification:** Validate `responseSchema` deserialization against live Google Protobuf parser.
-- [ ] **9.17 Valid HL7 FHIR Resource References & Scoped ActionType Permits:** Enforce strictly formatted HL7 FHIR R4 resource references (`MedicationRequest`, `DetectedIssue`, `Task`) and verify strict schema compliance and `ActionType` allowlist enforcement; reject unknown resource types.
-- [ ] **9.18 Full-Payload HMAC Signing, Anti-Replay TTL, Unicode Normalization & Canonical Serialization:** Full-payload canonical JSON serialization via `json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False)` with mandatory production secret enforcement, Unicode NFKC normalization (`unicodedata.normalize("NFKC", val).strip().casefold()`), and anti-replay verification (`issued_at`, `expires_at` TTL $\le 300\text{s}$ rejecting `current_time >= expires_at`, and unique `plan_id` nonce).
-- [ ] **9.19 Allowlist Protobuf Schema Sanitizer:** Allowlist schema fields (`ALLOWED_GEMINI_FIELDS`), strip unsupported OpenAPI constraints, and exclude `execution_payload` from LLM schema egress.
-- [ ] **9.20 Strip `<think>` Reasoning Blocks:** Remove `<think>` blocks and code fences from OpenRouter secondary model responses.
-- [ ] **9.21 Query Parameter API Key Redaction in Access Logs:** Active uvicorn filter masking `?apiKey=***`.
-- [ ] **9.22 Security Hardening Test Suite Integration:** Maintain 100% passing rate across all security regression tests.
+- [x] **9.1 Authenticated SSE Transport, Streaming Chunk Counter & Async Offloading:** Dual-header and query parameter authentication with 401 Unauthorized rejection; dual-layer 10MB payload size limit middleware (fast-path header inspection + streaming chunk counter for chunked requests rejecting with HTTP 413); and `asyncio.to_thread()` offloading for all database writes.
+- [x] **9.2 Cryptographic HMAC-SHA256 Plan Signing:** Tamper-evident signing using server-side secret with `verify_plan_signature()` helper and strict canonical JSON serialization.
+- [x] **9.3 Fail-Closed Contraindication Escalation:** Deterministically trigger `HOLD_PRESCRIPTION` and `ESCALATE_TO_CLINICAL_PHARMACIST` for any severe/major DDI, duplicate therapy class, or documented patient allergy cross-reactivity.
+- [x] **9.4 Organ-Function Dosing Bounds:** Enforce renal (`eGFR`/`CrCl`) and hepatic dosing ceiling checks, deterministically triggering `REQUEST_RENAL_HEPATIC_LABS` when labs are missing for narrow-therapeutic-index drugs.
+- [x] **9.5 Quarantine Pattern for Missing Mitigations & Invalid Enums:** Quarantine Risk $\ge 3$ actions lacking explicit mitigations or actions with invalid Enum types.
+- [x] **9.6 Gemini `responseSchema` Dereferencing & Token Cap:** Dereference `$defs`, strip unsupported fields via `ALLOWED_GEMINI_FIELDS`, and enforce `maxOutputTokens=8192` with high-thinking RAM guardrails.
+- [x] **9.7 FHIR Audit Log Persistence & Distributed Durability:** Document distributed synchronization options for SQLite WAL ledgers and FHIR audit logs with deterministic HIPAA PHI redaction.
+- [x] **9.8 Deterministic FHIR R4 Payload Execution Overwriting:** Strip and discard any LLM-generated execution payloads, replacing them with deterministic HL7 FHIR R4 JSON generators (`MedicationRequest`, `DetectedIssue`, `Task`) to verify zero LLM synthesis of clinical orders.
+- [x] **9.9 Real AWS Pricing Catalog Lookup & CatalogNotFoundError:** Real rate lookup in `config/instance_mappings.json` calculating `(curr_rate - tgt_rate) * 730.0`; raises `CatalogNotFoundError` on missing catalog and routes to Tertiary engine.
+- [x] **9.10 Constant-Time Authentication & Fail-Closed Enforcement:** `hmac.compare_digest()` matching with fail-closed production checks.
+- [x] **9.11 Verification Test Suite Expansion:** Dedicated unit tests for all security controls in `tests/test_phase9_hardening.py`.
+- [x] **9.12 Gemini `responseSchema` OpenAPI 3.0 `anyOf` Collapse:** Collapse Pydantic `{"anyOf": [{"type": "..."}, {"type": "null"}]}` into OpenAPI 3.0 `{"type": "...", "nullable": True}`.
+- [x] **9.13 Full Cryptographic Seal on `execution_payload`:** Include `execution_payload` in HMAC canonical payload hash.
+- [x] **9.14 Query Parameter API Key Plaintext Logging Advisory:** Publish SecOps guidance on URL query parameter exposure in access logs.
+- [x] **9.15 Pre-Commit Repository Hygiene:** Enforce zero un-ignored `.env` files and verify cleanliness via pre-commit hooks.
+- [x] **9.16 Live Gemini API Schema Pre-Flight Verification:** Validate `responseSchema` deserialization against live Google Protobuf parser.
+- [x] **9.17 Valid HL7 FHIR Resource References & Scoped ActionType Permits:** Enforce strictly formatted HL7 FHIR R4 resource references (`MedicationRequest`, `DetectedIssue`, `Task`) and verify strict schema compliance and `ActionType` allowlist enforcement; reject unknown resource types.
+- [x] **9.18 Full-Payload HMAC Signing, Anti-Replay TTL, Unicode Normalization & Canonical Serialization:** Full-payload canonical JSON serialization via `json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False)` with mandatory production secret enforcement, Unicode NFKC normalization (`unicodedata.normalize("NFKC", val).strip().casefold()`), and anti-replay verification (`issued_at`, `expires_at` TTL $\le 300\text{s}$ rejecting `current_time >= expires_at`, and unique `plan_id` nonce).
+- [x] **9.19 Allowlist Protobuf Schema Sanitizer:** Allowlist schema fields (`ALLOWED_GEMINI_FIELDS`), strip unsupported OpenAPI constraints, and exclude `execution_payload` from LLM schema egress.
+- [x] **9.20 Strip `<think>` Reasoning Blocks:** Remove `<think>` blocks and code fences from OpenRouter secondary model responses.
+- [x] **9.21 Query Parameter API Key Redaction in Access Logs:** Active uvicorn filter masking `?apiKey=***`.
+- [x] **9.22 Security Hardening Test Suite Integration:** Maintain 100% passing rate across all security regression tests.
 
 ---
 
