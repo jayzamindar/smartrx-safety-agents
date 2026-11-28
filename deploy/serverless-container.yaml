@@ -8,7 +8,9 @@ metadata:
   annotations:
     # Portable Cloud Run / Azure Container Apps / AWS ECS Fargate baseline
     autoscaling.knative.dev/minScale: "0"
-    autoscaling.knative.dev/maxScale: "10"
+    # Pinned to 1 instance: single-writer SQLite WAL (SMARTRX_DB_PATH=/app/data/smartrx_ledger.db)
+    # requires single-instance write serialization unless sharded per instance.
+    autoscaling.knative.dev/maxScale: "1"
     run.googleapis.com/execution-environment: gen2
 spec:
   template:
@@ -19,7 +21,7 @@ spec:
       containerConcurrency: 20
       timeoutSeconds: 300
       containers:
-        - image: smartrx-safety-agents:serverless
+        - image: us-central1-docker.pkg.dev/<PROJECT_ID>/smartrx/smartrx-safety-agents:v1.0.0
           ports:
             - name: http1
               containerPort: 8080
@@ -85,14 +87,18 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
           volumeMounts:
+            # POSIX-compliant persistent volume required for SQLite WAL + filelock.FileLock
             - name: smartrx-posix-ledger
               mountPath: /app/data
+            # Ephemeral in-container JSONL buffer (512Mi ceiling); sync to GCS or mount Filestore for durability
             - name: smartrx-audit-logs
               mountPath: /app/audit_logs
       volumes:
+        # Bind to Cloud Filestore (NFS) PVC in production; GCS FUSE is unsupported for SQLite WAL
         - name: smartrx-posix-ledger
           persistentVolumeClaim:
             claimName: smartrx-ledger-pvc
+        # Ephemeral emptyDir for daily JSONL rotation; export/archive to GCS or replace with Filestore PVC for multi-revision durability
         - name: smartrx-audit-logs
           emptyDir:
             sizeLimit: "512Mi"

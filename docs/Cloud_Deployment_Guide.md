@@ -18,17 +18,38 @@
 | **Persistent Volumes** | POSIX block storage at `/app/data` (`smartrx_ledger.db` SQLite WAL) and `/app/audit_logs` (daily JSONL rotation) |
 | **Health Probes** | `GET /health` (or `/v1/health`) returning HTTP `200` with `wal_mode`, `chain_valid`, and `catalog_rules` |
 
+### Cloud-Account Prerequisites
+
+Before running the deploy commands in §2, provision the following cloud-account resources matching the placeholders in `deploy/`:
+
+1. **Container Registry:**
+   - **AWS ECR:** Create repository `smartrx-safety-agents` in `<REGION>` (`aws ecr create-repository --repository-name smartrx-safety-agents --region <REGION>`).
+   - **Azure ACR:** Create registry `<ACR_NAME>` in resource group `<RG>` (`az acr create -g <RG> -n <ACR_NAME> --sku Standard`).
+   - **GCP Artifact Registry:** Create Docker repository `smartrx` in `us-central1` (`gcloud artifacts repositories create smartrx --repository-format=docker --location=us-central1`).
+2. **Secrets Vault (`MCP_API_KEY`, `PLAN_SIGNING_SECRET`, `SMARTRX_SAFETY_AGENTS_WEBHOOK_SECRET`, `GEMINI_API_KEY`):**
+   - **AWS Secrets Manager:** Create secret `smartrx/prod` containing JSON keys `MCP_API_KEY`, `PLAN_SIGNING_SECRET`, `WEBHOOK_SECRET`, and `GEMINI_API_KEY`.
+   - **Azure Key Vault:** Create `<KEYVAULT_NAME>` and store secrets `mcp-api-key`, `plan-signing-secret`, `webhook-secret`, and `gemini-api-key`.
+   - **GCP Secret Manager:** Create secret `smartrx-secrets` (or mapped keys `mcp-api-key`, `plan-signing-secret`, `webhook-secret`, `gemini-api-key` referenced by `secretKeyRef`).
+3. **IAM / Managed Identity Bindings:**
+   - **AWS ECS:** Provision `ecsTaskExecutionRole` (ECR pull + `secretsmanager:GetSecretValue` on `smartrx/prod` + CloudWatch Logs) and `smartrxTaskRole` (EFS access points + S3 audit archive).
+   - **Azure Container Apps:** Create User-Assigned Managed Identity `smartrx-identity` in `<RG>` with `AcrPull` on `<ACR_NAME>` and `Key Vault Secrets User` on `<KEYVAULT_NAME>`.
+   - **GCP Cloud Run:** Grant the Cloud Run runtime service account `roles/artifactregistry.reader` and `roles/secretmanager.secretAccessor`.
+4. **POSIX Persistent Volumes (SQLite WAL + `filelock`):**
+   - **AWS EFS:** Provision EFS `<EFS_ID>` with transit encryption enabled and access points `<EFS_AP_DATA_ID>` (`/app/data`) and `<EFS_AP_LOGS_ID>` (`/app/audit_logs`).
+   - **Azure Files:** Create NFSv4.1 file shares `smartrx-azurefiles-data` and `smartrx-azurefiles-logs` registered in Container Apps environment `smartrx-env`.
+   - **GCP Cloud Filestore:** Provision a Filestore instance and bind `PersistentVolumeClaim` `smartrx-ledger-pvc` for `/app/data` (and optionally `/app/audit_logs`, or sync `/app/audit_logs` to GCS; see [`docs/Ephemeral_Ledger_Architecture.md`](Ephemeral_Ledger_Architecture.md)).
+
 ---
 
 ## 2. Cloud Target Topologies
 
 ### 2.1 AWS ECS / Fargate (`deploy/aws-ecs-task-definition.json`)
-- **Manifest:** [`deploy/aws-ecs-task-definition.json`](../deploy/aws-ecs-task-definition.json) (`cpu: 1024`, `memory: 2048`, `readonlyRootFilesystem: true`, `user: "10001:10001"`, port `8080`, EFS volumes at `/app/data` and `/app/audit_logs`).
+- **Manifest:** [`deploy/aws-ecs-task-definition.json`](../deploy/aws-ecs-task-definition.json) (`cpu: 1024`, `memory: 2048`, `readonlyRootFilesystem: true`, `user: "10001:10001"`, port `8080`, EFS volumes `<EFS_ID>` via `<EFS_AP_DATA_ID>` at `/app/data` and `<EFS_AP_LOGS_ID>` at `/app/audit_logs`).
 - **Deploy CLI Steps:**
   ```bash
-  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
-  docker build -t <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/smartrx-safety-agents:v1.0.0 .
-  docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/smartrx-safety-agents:v1.0.0
+  aws ecr get-login-password --region <REGION> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com
+  docker build -t <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/smartrx-safety-agents:v1.0.0 .
+  docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/smartrx-safety-agents:v1.0.0
   aws ecs register-task-definition --cli-input-json file://deploy/aws-ecs-task-definition.json
   aws ecs update-service --cluster smartrx-prod --service smartrx-safety-agents --task-definition smartrx-safety-agents --force-new-deployment
   ```
@@ -41,7 +62,7 @@
         "Sid": "SecretsReadOnly",
         "Effect": "Allow",
         "Action": ["secretsmanager:GetSecretValue"],
-        "Resource": ["arn:aws:secretsmanager:us-east-1:<ACCOUNT_ID>:secret:smartrx/*"]
+        "Resource": ["arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:smartrx/*"]
       },
       {
         "Sid": "AuditArchiveSync",
@@ -105,3 +126,17 @@
 2. **Graceful Drain:** Send `SIGTERM` to Green containers; `FastAPI` lifespan handler sets active SSE `stop_event`s and executes `audit_ledger.checkpoint("TRUNCATE")` before exit.
 3. **Ledger Integrity Verification:** Run `smartrx-safety-agents verify-audit` (or `GET /api/v1/audit/verify`) against the Blue volume to confirm `chain_valid: true` and zero uncheckpointed WAL drift.
 4. **Incident Capture:** Export `/app/audit_logs/audit-YYYY-MM-DD.jsonl` and OpenTelemetry traces for post-mortem review.
+
+### Cloud-Specific CLI Rollback One-Liners
+- **AWS ECS Fargate:**
+  ```bash
+  aws ecs update-service --cluster smartrx-prod --service smartrx-safety-agents --task-definition smartrx-safety-agents:<PREVIOUS_REVISION> --force-new-deployment
+  ```
+- **Azure Container Apps:**
+  ```bash
+  az containerapp revision activate -g <RG> -n smartrx-safety-agents --revision <PREVIOUS_REVISION> && az containerapp revision deactivate -g <RG> -n smartrx-safety-agents --revision <BAD_REVISION>
+  ```
+- **Google Cloud Run:**
+  ```bash
+  gcloud run services update-traffic smartrx-safety-agents --region us-central1 --to-revisions=<PREVIOUS_REVISION>=100
+  ```
