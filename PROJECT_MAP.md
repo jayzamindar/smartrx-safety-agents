@@ -27,15 +27,16 @@
 - `prompts/modules/` - Version-stamped (<80-line) clinical prompts for all 6 specialist agents.
 - `agents/` - `MultiTierLLMClient` (`llm_client.py`), 6 specialists (`specialists.py`), `SmartRxOrchestrator` (`orchestrator.py`).
 - `persistence/` - `AuditLedger` (`ledger.py`): SQLite WAL hash-chained store with per-operation FileLock & MVCC reads.
-- `mcp/` - Dual-transport MCP server (stdio JSON-RPC & Starlette SSE).
+- `api/` - `server.py` (FastAPI REST/SSE, 10MB guard, auth, `/api/v1/*`) & `mcp_server.py` (`smartrx://` stdio/SSE).
 - `observability.py` - OpenTelemetry spans, metrics, and structured logging.
-- `cli.py` - Click console entrypoint commands (`smartrx-safety-agents`).
+- `cli.py` - Click CLI (`status`, `reconcile --dry-run`, `benchmark`, `verify-audit`, `serve`, `mcp`).
 
 ## Test Suite Layout (`tests/`)
 - `test_models_clinical.py` - Contract validation, ActionType enum allowlist, NFKC normalization tests.
 - `test_clinical_heuristics.py` - Benchmark `TC-001`–`TC-008`, `CatalogNotFoundError`, OCR NTI & PHI redaction tests.
 - `test_guardrails_ledger.py` - FHIR overwrite, HMAC-SHA256, TTL/replay, idempotency & SQLite WAL hash-chain tests.
 - `test_agents_orchestrator.py` - 6-agent pipeline, pre-LLM PHI scrubbing, 3-tier cascade, 3-turn circuit breaker, ledger chain.
+- `test_api_mcp_cli.py` - FastAPI `/health`, `/api/v1/*`, 413/401/422 guards, MCP `smartrx://`, Click CLI tests.
 - `test_mcp.py` - stdio and SSE transport protocols, 10MB limits, auth verification.
 - `test_ledger.py` - SQLite WAL concurrency, MVCC read-bypass, migration tests.
 - `test_phase9_hardening.py` - Cryptographic HMAC, anti-replay, Unicode normalization.
