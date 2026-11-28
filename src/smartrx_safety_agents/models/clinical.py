@@ -143,9 +143,7 @@ class ClinicalAlert(StrictClinicalModel):
     """Deterministic clinical safety finding with verifiable source citation."""
 
     alert_id: str = Field(..., min_length=1)
-    rule_category: Literal[
-        "DDI", "ALLERGY", "DUPLICATION", "DOSING", "BEERS_CRITERIA", "OCR_NTI"
-    ]
+    rule_category: Literal["DDI", "ALLERGY", "DUPLICATION", "DOSING", "BEERS_CRITERIA", "OCR_NTI"]
     severity: Literal["contraindicated", "major", "moderate", "minor"]
     risk_score: int = Field(..., ge=1, le=5)
     risk_grade: RiskGrade

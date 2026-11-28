@@ -1,0 +1,206 @@
+{
+  "catalog_version": "1.0.0",
+  "drug_aliases": {
+    "lipitor": {"rxcui": "83367", "generic_name": "atorvastatin"},
+    "atorvastatin": {"rxcui": "83367", "generic_name": "atorvastatin"},
+    "coumadin": {"rxcui": "11289", "generic_name": "warfarin"},
+    "warfarin": {"rxcui": "11289", "generic_name": "warfarin"},
+    "cordarone": {"rxcui": "703", "generic_name": "amiodarone"},
+    "amiodarone": {"rxcui": "703", "generic_name": "amiodarone"},
+    "advil": {"rxcui": "5640", "generic_name": "ibuprofen"},
+    "motrin": {"rxcui": "5640", "generic_name": "ibuprofen"},
+    "ibuprofen": {"rxcui": "5640", "generic_name": "ibuprofen"},
+    "amoxil": {"rxcui": "723", "generic_name": "amoxicillin"},
+    "amoxicillin": {"rxcui": "723", "generic_name": "amoxicillin"},
+    "keflex": {"rxcui": "2231", "generic_name": "cephalexin"},
+    "cephalexin": {"rxcui": "2231", "generic_name": "cephalexin"},
+    "lanoxin": {"rxcui": "3407", "generic_name": "digoxin"},
+    "digoxin": {"rxcui": "3407", "generic_name": "digoxin"},
+    "lithobid": {"rxcui": "6448", "generic_name": "lithium"},
+    "lithium": {"rxcui": "6448", "generic_name": "lithium"},
+    "pradaxa": {"rxcui": "1037042", "generic_name": "dabigatran"},
+    "dabigatran": {"rxcui": "1037042", "generic_name": "dabigatran"},
+    "dilantin": {"rxcui": "8183", "generic_name": "phenytoin"},
+    "phenytoin": {"rxcui": "8183", "generic_name": "phenytoin"},
+    "prinivil": {"rxcui": "29046", "generic_name": "lisinopril"},
+    "zestril": {"rxcui": "29046", "generic_name": "lisinopril"},
+    "lisinopril": {"rxcui": "29046", "generic_name": "lisinopril"},
+    "vasotec": {"rxcui": "3827", "generic_name": "enalapril"},
+    "enalapril": {"rxcui": "3827", "generic_name": "enalapril"},
+    "benadryl": {"rxcui": "3498", "generic_name": "diphenhydramine"},
+    "diphenhydramine": {"rxcui": "3498", "generic_name": "diphenhydramine"},
+    "valium": {"rxcui": "3322", "generic_name": "diazepam"},
+    "diazepam": {"rxcui": "3322", "generic_name": "diazepam"},
+    "glucophage": {"rxcui": "6809", "generic_name": "metformin"},
+    "metformin": {"rxcui": "6809", "generic_name": "metformin"},
+    "zocor": {"rxcui": "36567", "generic_name": "simvastatin"},
+    "simvastatin": {"rxcui": "36567", "generic_name": "simvastatin"},
+    "eliquis": {"rxcui": "1364430", "generic_name": "apixaban"},
+    "apixaban": {"rxcui": "1364430", "generic_name": "apixaban"}
+  },
+  "nti_rxcuis": ["11289", "3407", "6448", "8183"],
+  "ddi_pairs": [
+    {
+      "rxcui_a": "11289",
+      "rxcui_b": "703",
+      "drug_a": "warfarin",
+      "drug_b": "amiodarone",
+      "severity": "major",
+      "rationale": "Amiodarone inhibits CYP2C9 and CYP3A4, markedly increasing warfarin plasma levels and INR/bleeding risk.",
+      "citation": "RxNorm:11289-703 | PMID:15640376"
+    },
+    {
+      "rxcui_a": "11289",
+      "rxcui_b": "5640",
+      "drug_a": "warfarin",
+      "drug_b": "ibuprofen",
+      "severity": "major",
+      "rationale": "Concurrent NSAID and warfarin therapy substantially elevates gastrointestinal and systemic hemorrhage risk.",
+      "citation": "RxNorm:11289-5640 | PMID:21300938"
+    },
+    {
+      "rxcui_a": "36567",
+      "rxcui_b": "703",
+      "drug_a": "simvastatin",
+      "drug_b": "amiodarone",
+      "severity": "moderate",
+      "rationale": "Amiodarone inhibits CYP3A4 metabolism of simvastatin, increasing risk of myopathy and rhabdomyolysis above 20 mg/day.",
+      "citation": "RxNorm:36567-703 | FDA DailyMed"
+    },
+    {
+      "rxcui_a": "29046",
+      "rxcui_b": "5640",
+      "drug_a": "lisinopril",
+      "drug_b": "ibuprofen",
+      "severity": "moderate",
+      "rationale": "NSAIDs may attenuate the antihypertensive effect of ACE inhibitors and increase risk of acute kidney injury.",
+      "citation": "RxNorm:29046-5640 | PMID:23296592"
+    }
+  ],
+  "therapeutic_classes": {
+    "statin": {
+      "rxcuis": ["83367", "36567"],
+      "citation": "RxNorm Class ATC:C10AA | ACC/AHA Lipid Guidelines"
+    },
+    "ace_inhibitor": {
+      "rxcuis": ["29046", "3827"],
+      "citation": "RxNorm Class ATC:C09AA | AHA Hypertension Guidelines"
+    },
+    "anticoagulant": {
+      "rxcuis": ["11289", "1037042", "1364430"],
+      "citation": "RxNorm Class ATC:B01A | CHEST Antithrombotic Guidelines"
+    }
+  },
+  "allergy_cross_reactivities": [
+    {
+      "allergen": "penicillin",
+      "cross_reactive_rxcuis": ["723", "2231"],
+      "cross_reactive_names": ["amoxicillin", "ampicillin", "cephalexin", "cefazolin", "penicillin"],
+      "severity": "contraindicated",
+      "rationale": "Beta-lactam structural cross-reactivity risk in patient with documented penicillin hypersensitivity.",
+      "citation": "PMID:30644719 | AAAAI Beta-Lactam Allergy Practice Parameter"
+    },
+    {
+      "allergen": "sulfa",
+      "cross_reactive_rxcuis": ["10831"],
+      "cross_reactive_names": ["sulfamethoxazole", "trimethoprim-sulfamethoxazole", "sulfa"],
+      "severity": "contraindicated",
+      "rationale": "Documented sulfonamide hypersensitivity contraindicates sulfonamide antimicrobial administration.",
+      "citation": "PMID:28859216 | NLM DailyMed"
+    }
+  ],
+  "organ_dosing_rules": [
+    {
+      "rxcui": "3407",
+      "drug_name": "digoxin",
+      "requires_renal_lab": true,
+      "requires_hepatic_lab": false,
+      "min_egfr_ml_min": 30.0,
+      "contraindicated_egfr_ml_min": 15.0,
+      "hepatic_caution": false,
+      "hepatic_contraindicated": false,
+      "citation": "RxNorm:3407 | FDA DailyMed Digoxin Renal Dosing"
+    },
+    {
+      "rxcui": "6448",
+      "drug_name": "lithium",
+      "requires_renal_lab": true,
+      "requires_hepatic_lab": false,
+      "min_egfr_ml_min": 45.0,
+      "contraindicated_egfr_ml_min": 30.0,
+      "hepatic_caution": false,
+      "hepatic_contraindicated": false,
+      "citation": "RxNorm:6448 | PMID:26438011"
+    },
+    {
+      "rxcui": "1037042",
+      "drug_name": "dabigatran",
+      "requires_renal_lab": true,
+      "requires_hepatic_lab": true,
+      "min_egfr_ml_min": 30.0,
+      "contraindicated_egfr_ml_min": 15.0,
+      "hepatic_caution": true,
+      "hepatic_contraindicated": false,
+      "citation": "RxNorm:1037042 | FDA DailyMed Pradaxa Renal Clearance"
+    },
+    {
+      "rxcui": "11289",
+      "drug_name": "warfarin",
+      "requires_renal_lab": false,
+      "requires_hepatic_lab": true,
+      "min_egfr_ml_min": null,
+      "contraindicated_egfr_ml_min": null,
+      "hepatic_caution": true,
+      "hepatic_contraindicated": false,
+      "citation": "RxNorm:11289 | FDA DailyMed Coumadin Hepatic Metabolism"
+    },
+    {
+      "rxcui": "6809",
+      "drug_name": "metformin",
+      "requires_renal_lab": true,
+      "requires_hepatic_lab": false,
+      "min_egfr_ml_min": 45.0,
+      "contraindicated_egfr_ml_min": 30.0,
+      "hepatic_caution": false,
+      "hepatic_contraindicated": true,
+      "citation": "RxNorm:6809 | FDA Safety Communication eGFR <30 Contraindication"
+    }
+  ],
+  "beers_criteria": [
+    {
+      "rxcui": "3498",
+      "drug_name": "diphenhydramine",
+      "min_age": 65,
+      "rationale": "Strong anticholinergic agent; high risk of confusion, delirium, dry mouth, and falls in adults >=65.",
+      "alternative": "cetirizine or loratadine (non-sedating second-generation antihistamine)",
+      "citation": "AGS Beers Criteria 2023 | PMID:37139824"
+    },
+    {
+      "rxcui": "3322",
+      "drug_name": "diazepam",
+      "min_age": 65,
+      "rationale": "Long-acting benzodiazepine increases risk of cognitive impairment, delirium, falls, and fractures in adults >=65.",
+      "alternative": "non-pharmacologic sleep/anxiety therapy or short-acting SSRI",
+      "citation": "AGS Beers Criteria 2023 | PMID:37139824"
+    }
+  ],
+  "cms_default_formulary": {
+    "83367": {"formulary_tier": 1, "estimated_copay_usd": 10.0, "requires_pa": false, "alternatives": []},
+    "29046": {"formulary_tier": 1, "estimated_copay_usd": 10.0, "requires_pa": false, "alternatives": []},
+    "6809": {"formulary_tier": 1, "estimated_copay_usd": 10.0, "requires_pa": false, "alternatives": []},
+    "11289": {"formulary_tier": 1, "estimated_copay_usd": 12.0, "requires_pa": false, "alternatives": []},
+    "723": {"formulary_tier": 1, "estimated_copay_usd": 8.0, "requires_pa": false, "alternatives": []},
+    "1037042": {
+      "formulary_tier": 3,
+      "estimated_copay_usd": 47.0,
+      "requires_pa": true,
+      "alternatives": [
+        {"rxcui": "1364430", "drug_name": "apixaban", "formulary_tier": 2, "estimated_copay_usd": 35.0, "requires_pa": false},
+        {"rxcui": "11289", "drug_name": "warfarin", "formulary_tier": 1, "estimated_copay_usd": 12.0, "requires_pa": false}
+      ]
+    },
+    "default_tier": 3,
+    "default_copay_usd": 45.0,
+    "default_requires_pa": false
+  }
+}

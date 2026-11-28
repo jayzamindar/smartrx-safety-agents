@@ -22,7 +22,8 @@
 - `config.py` - Pydantic settings, model identifiers, memory/token thresholds, secrets.
 - `models/` - Pydantic v2 contracts (`clinical.py` with 6 agent outputs, `ActionType` Enum, `remediation.py`, `audit.py`).
 - `guardrails/` - Safety scoring, quarantine patterns, deterministic HL7 FHIR R4 (`fhir_generator.py`) & rollback synthesis.
-- `heuristics/` - Offline deterministic clinical engines (`ddi_engine.py`, `allergy_checker.py`, `dosing_validator.py`, `formulary_checker.py`, `phi_redactor.py`).
+- `heuristics/` - Offline deterministic clinical engines (`ddi_engine.py`, `allergy_checker.py`, `dosing_validator.py`, `formulary_checker.py`, `phi_redactor.py`, `engine.py`).
+- `config/drug_interactions.json` - Schema-validated static DDI, allergy cross-reactivity, NTI, renal/hepatic, Beer's Criteria & CMS catalog.
 - `reasoner/` - Gemini client (thinkingBudget, responseSchema), OpenRouter fallback.
 - `ledger/` - SQLite WAL persistent audit store with per-operation FileLock.
 - `mcp/` - Dual-transport MCP server (stdio JSON-RPC & Starlette SSE).
@@ -30,8 +31,8 @@
 - `cli.py` - Click console entrypoint commands (`smartrx-safety-agents`).
 
 ## Test Suite Layout (`tests/`)
-- `test_schemas.py` - Contract validation, ActionType enum allowlist tests.
-- `test_heuristics.py` - Heuristic rule coverage, catalog fallback verification.
+- `test_models_clinical.py` - Contract validation, ActionType enum allowlist, NFKC normalization tests.
+- `test_clinical_heuristics.py` - Benchmark `TC-001`–`TC-008`, `CatalogNotFoundError`, OCR NTI & PHI redaction tests.
 - `test_reasoner.py` - LLM reasoning, responseSchema sanitization, cascade tests.
 - `test_mcp.py` - stdio and SSE transport protocols, 10MB limits, auth verification.
 - `test_ledger.py` - SQLite WAL concurrency, MVCC read-bypass, migration tests.
