@@ -45,3 +45,4 @@
 - `test_ui_and_seeder.py` - Pharmacist HITL Workbench, BPMH diff, What-If swap, circuit breaker & `TC-001`–`TC-008` seeder tests.
 - `test_observability_and_retention.py` - OpenTelemetry `trace_span`, `.shutdown()`, `InMemoryMetricsLedger`, and JSONL rotation/pruning tests.
 - `.github/workflows/ci.yml` - Python 3.13/3.14 CI matrix, `ruff`, `mypy`, `pytest` (>=90% cov), `pip-audit`, license & secret scan.
+- `Dockerfile` & `docker-compose.yml` - Multi-stage non-root (`smartrx` UID 10001) runtime image, `mem_limit: 2048m`, `/health` probe.
