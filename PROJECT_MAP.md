@@ -46,3 +46,5 @@
 - `test_observability_and_retention.py` - OpenTelemetry `trace_span`, `.shutdown()`, `InMemoryMetricsLedger`, and JSONL rotation/pruning tests.
 - `.github/workflows/ci.yml` - Python 3.13/3.14 CI matrix, `ruff`, `mypy`, `pytest` (>=90% cov), `pip-audit`, license & secret scan.
 - `Dockerfile` & `docker-compose.yml` - Multi-stage non-root (`smartrx` UID 10001) runtime image, `mem_limit: 2048m`, `/health` probe.
+- `docker-compose.prod.yml` & `deploy/` - Read-only rootfs prod compose, `smartrx-safety-agents-deploy.sh`, `serverless-container.yaml`, `Dockerfile.serverless`.
+- `docs/Ephemeral_Ledger_Architecture.md` - SQLite WAL POSIX volume requirements and JSONL object-storage sync architecture.

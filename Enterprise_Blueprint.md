@@ -165,10 +165,10 @@ Every phase in this blueprint must satisfy the following **Definition of Done (D
 ### Phase 8: [UNIVERSAL CORE / DEPLOYMENT PROFILE] Turnkey Standard Enterprise Cloud (AWS / Azure / Kubernetes) Production Deployment
 *Goal: Package and blueprint deployment options for Standard Enterprise Cloud (AWS / Azure / Kubernetes) compute environments.*
 
-- [ ] **8.1 Turnkey Compute Deployment Blueprint:** Author `deploy/smartrx-safety-agents-deploy.sh` and `docker-compose.prod.yml` configured for Standard Enterprise Cloud (AWS / Azure / Kubernetes), hard-capping container memory at 2048MB (`mem_limit: 2048m`).
-- [ ] **8.2 Serverless Container Blueprint:** Author serverless container deployment configuration and Dockerfile for zero-server, pay-per-request execution.
-- [ ] **8.3 Ephemeral Ledger Architecture Guide:** Author architectural guide detailing ephemeral storage considerations across serverless container runtimes and detailing persistent volume synchronization for ledger durability.
-- [ ] **8.4 Turnkey Deployment Verification:** Verify Docker Compose local stack with volume persistence (`./data:/app/data`) and simulate deployment script execution.
+- [x] **8.1 Turnkey Compute Deployment Blueprint:** Author `deploy/smartrx-safety-agents-deploy.sh` and `docker-compose.prod.yml` configured for Standard Enterprise Cloud (AWS / Azure / Kubernetes), hard-capping container memory at 2048MB (`mem_limit: 2048m`, `read_only: true`, `/tmp` tmpfs, fail-fast required secrets).
+- [x] **8.2 Serverless Container Blueprint:** Author serverless container deployment configuration (`deploy/serverless-container.yaml`) and `Dockerfile.serverless` for zero-server, pay-per-request execution.
+- [x] **8.3 Ephemeral Ledger Architecture Guide:** Author `docs/Ephemeral_Ledger_Architecture.md` detailing ephemeral storage considerations across serverless container runtimes, POSIX storage requirements for SQLite WAL (`-wal`/`-shm`), and durable object-storage sync for JSONL audit logs.
+- [x] **8.4 Turnkey Deployment Verification:** Verify read-only container stack with volume persistence (`./data_test_vol:/app/data`, `./audit_logs_test_vol:/app/audit_logs`), confirming `smartrx_ledger.db` creation on host volume, `whoami -> smartrx`, and HTTP 200 on `/health`.
 
 ---
 
